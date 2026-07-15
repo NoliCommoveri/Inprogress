@@ -44,11 +44,12 @@ export function mount(container) {
 
   function renderContacts() {
     const parents = getParents();
+    const text = buildWeeklyUpdateText();
     contactsBody.innerHTML = parents.map(p => `
       <tr>
         <td><div class="name-display">${escapeHtml(p.name)}</div></td>
-        <td>${p.email ? `<a href="${escapeHtml(mailtoLink(p.email, '', ''))}">Email</a>` : '—'}</td>
-        <td>${p.phone ? `<a href="${escapeHtml(smsLink(p.phone, ''))}">Text</a>` : '—'}</td>
+        <td>${p.email ? `<a href="${escapeHtml(mailtoLink(p.email, 'Weekly Practice & Snack Schedule', text))}">Email</a>` : '—'}</td>
+        <td>${p.phone ? `<a href="${escapeHtml(smsLink(p.phone, text))}">Text</a>` : '—'}</td>
       </tr>
     `).join('') || '<tr><td colspan="3">No parents yet.</td></tr>';
   }

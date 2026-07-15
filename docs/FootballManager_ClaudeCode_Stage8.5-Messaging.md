@@ -216,11 +216,12 @@ export function mount(container) {
 
   function renderContacts() {
     const parents = getParents();
+    const text = buildWeeklyUpdateText();
     contactsBody.innerHTML = parents.map(p => `
       <tr>
         <td><div class="name-display">${escapeHtml(p.name)}</div></td>
-        <td>${p.email ? `<a href="${escapeHtml(mailtoLink(p.email, '', ''))}">Email</a>` : '—'}</td>
-        <td>${p.phone ? `<a href="${escapeHtml(smsLink(p.phone, ''))}">Text</a>` : '—'}</td>
+        <td>${p.email ? `<a href="${escapeHtml(mailtoLink(p.email, 'Weekly Practice & Snack Schedule', text))}">Email</a>` : '—'}</td>
+        <td>${p.phone ? `<a href="${escapeHtml(smsLink(p.phone, text))}">Text</a>` : '—'}</td>
       </tr>
     `).join('') || '<tr><td colspan="3">No parents yet.</td></tr>';
   }
@@ -290,8 +291,11 @@ Notes tying this back to the existing mobile-layout conventions
   elsewhere. If clipboard permission is denied, the fallback message shows
   instead of a silent failure or thrown error.
 - **Communications view — Parent Contacts**: each row with an email shows a
-  working "Email" link (opens mail client, blank subject/body, correct
-  recipient); each row with a phone shows a working "Text" link. A parent
+  working "Email" link (opens mail client, prefilled with the same subject
+  and digest text as "Email All Parents," correct single recipient); each
+  row with a phone shows a working "Text" link prefilled with the same
+  digest text (verified the `sms:` body decodes to the same text, no `+`
+  where spaces should be — same encoding fix as the email link). A parent
   with neither field shows an em dash in both columns, no broken `href`.
 - **Mobile layout**: at 320/360/375/390px viewport widths, zero
   page-level horizontal overflow (`document.documentElement.scrollWidth -
