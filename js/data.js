@@ -1,5 +1,4 @@
 // data.js — the only file allowed to call localStorage.
-// Stage 3 adds the cross-tab `storage` event listener.
 
 const STORAGE_KEY = 'stm:v1';
 const SCHEMA_VERSION = 1;
@@ -50,12 +49,30 @@ export function loadData() {
   return _cache;
 }
 
+// True when no store has ever been saved on this origin — the signal seed.js
+// uses to seed exactly once, without touching localStorage itself.
+export function isFirstRun() {
+  return localStorage.getItem(STORAGE_KEY) === null;
+}
+
 export function saveData() {
   _cache.meta.lastModifiedAt = new Date().toISOString();
   localStorage.setItem(STORAGE_KEY, JSON.stringify(_cache));
 }
 
 export function subscribe(fn) { _subs.add(fn); return () => _subs.delete(fn); }
+
+// ---------- Cross-tab sync ----------
+// Fires in *other* tabs when our key changes. Reload the cache from the new
+// value and notify subscribers so a second tab can't silently overwrite the
+// first (§9.2). Single-user app, so last-write-wins is sufficient.
+if (typeof window !== 'undefined') {
+  window.addEventListener('storage', (e) => {
+    if (e.key !== STORAGE_KEY) return;
+    _cache = e.newValue ? migrate(JSON.parse(e.newValue)) : emptyData();
+    _subs.forEach(fn => fn());
+  });
+}
 
 // ---------- Generic mutation helpers ----------
 function touch(rec) { rec.updatedAt = new Date().toISOString(); return rec; }

@@ -10,6 +10,8 @@
   <div id="app">Loading…</div>
   <script type="module">
     import { getData } from './js/data.js';
+    import { seedIfNeeded } from './js/seed.js';
+    seedIfNeeded();
     console.log('[Football Manager] boot OK, data =', getData());
   </script>
 </body>
