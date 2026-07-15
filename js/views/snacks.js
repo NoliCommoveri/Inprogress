@@ -12,12 +12,13 @@ export function mount(container) {
     <h2>Snack Schedule</h2>
     <div class="table-scroll">
       <table class="snacks-table">
-        <thead><tr><th>Date</th><th>Time</th><th>Location</th><th>Snack Parent(s)</th><th>Assign</th></tr></thead>
+        <thead><tr><th>Date</th><th>Time</th><th>Snack Parent(s)</th><th></th></tr></thead>
         <tbody id="snacks-body"></tbody>
       </table>
     </div>
   `;
   const tbody = container.querySelector('#snacks-body');
+  const expandedIds = new Set();
 
   function render() {
     const today = new Date().toISOString().slice(0, 10);
@@ -39,20 +40,36 @@ export function mount(container) {
       const assignedIds = new Set(assignments.map(sa => sa.parentId));
       const options = parents.filter(p => !assignedIds.has(p.id))
         .map(p => `<option value="${p.id}">${escapeHtml(p.name)}</option>`).join('');
+      const isExpanded = expandedIds.has(e.id);
 
       return `
         <tr data-id="${e.id}" class="${unassigned ? 'unassigned-flag' : ''}">
-          <td>${e.date}</td>
-          <td>${e.startTime}</td>
-          <td>${escapeHtml(e.location)}</td>
+          <td class="col-date">${e.date}</td>
+          <td class="col-time">${e.startTime}</td>
           <td>${assignedList || (unassigned ? '⚠️ Unassigned' : '—')}</td>
-          <td>${options ? `<select class="assign-select">
-              <option value="">+ assign parent…</option>${options}</select>` : '(no parents)'}</td>
+          <td><button class="expand-toggle" aria-expanded="${isExpanded}" title="More fields">${isExpanded ? '▾' : '▸'}</button></td>
+        </tr>
+        <tr class="expand-row" data-id="${e.id}" ${isExpanded ? '' : 'hidden'}>
+          <td colspan="4">
+            <div class="expand-grid">
+              <div class="field-row"><label>Location</label><span>${escapeHtml(e.location) || '—'}</span></div>
+              <div class="field-row"><label>Assign</label>${options ? `<select class="assign-select">
+                  <option value="">+ assign parent…</option>${options}</select>` : '<span>(no parents)</span>'}</div>
+            </div>
+          </td>
         </tr>`;
-    }).join('') || '<tr><td colspan="5">No practices scheduled.</td></tr>';
+    }).join('') || '<tr><td colspan="4">No practices scheduled.</td></tr>';
   }
 
   tbody.addEventListener('click', (e) => {
+    const row = e.target.closest('tr');
+    if (row) {
+      const id = row.dataset.id;
+      if (e.target.classList.contains('expand-toggle')) {
+        if (expandedIds.has(id)) expandedIds.delete(id); else expandedIds.add(id);
+        render();
+      }
+    }
     if (e.target.classList.contains('unassign-btn')) {
       deleteSnackAssignment(e.target.dataset.sa);
     }

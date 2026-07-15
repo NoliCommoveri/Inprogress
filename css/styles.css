@@ -276,16 +276,18 @@ dialog form input, dialog form select {
   background: #eef1f4;
 }
 
-/* Compact roster/parents/schedule columns + expandable rows */
+/* Compact roster/parents/schedule/snacks columns + expandable rows */
 .roster-table th, .roster-table td,
 .parents-table th, .parents-table td,
-.schedule-table th, .schedule-table td {
+.schedule-table th, .schedule-table td,
+.snacks-table th, .snacks-table td {
   padding: 6px 2px;
 }
 
 .roster-table th:first-child, .roster-table td:first-child,
 .parents-table th:first-child, .parents-table td:first-child,
-.schedule-table th:first-child, .schedule-table td:first-child {
+.schedule-table th:first-child, .schedule-table td:first-child,
+.snacks-table th:first-child, .snacks-table td:first-child {
   padding-left: 4px;
 }
 
@@ -318,6 +320,16 @@ dialog form input, dialog form select {
 .schedule-table .f-start {
   width: 92px;
   padding: 5px 4px;
+}
+
+.snacks-table .col-date {
+  width: 128px;
+  white-space: nowrap;
+}
+
+.snacks-table .col-time {
+  width: 92px;
+  white-space: nowrap;
 }
 
 .schedule-table .f-type {
