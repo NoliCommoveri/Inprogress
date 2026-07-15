@@ -71,3 +71,12 @@ console before wiring up any UI on top.
 - Each stage has an acceptance gate in the BuildPlan. Confirm it passes
   before starting the next stage, and stop for a check-in if a stage's
   scope or gate is ambiguous rather than guessing.
+- Before ending a build session, check off the BuildPlan items you
+  completed and add a short verification note under the stage's gate
+  (what you tested, how, and the result) — same pattern as Stages 0-3.
+- Open a PR for the session's branch once its work is committed and
+  pushed.
+- Once the user confirms they've approved/merged that PR, pull the
+  latest default branch and start the next session's branch from it
+  before doing any new work, so each stage builds on merged history
+  instead of stacking on an unmerged branch.
