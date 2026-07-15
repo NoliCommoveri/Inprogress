@@ -9,24 +9,32 @@ import { escapeHtml } from '../util.js';
 export function mount(container) {
   container.innerHTML = `
     <h2>Parents</h2>
+    <button type="button" id="add-toggle" class="add-toggle-btn" aria-expanded="false">+ Add Parent</button>
+    <form id="add-parent-form" class="add-form" hidden>
+      <input name="name" placeholder="Name" required />
+      <input name="phone" placeholder="Phone" />
+      <input name="email" placeholder="Email (optional)" />
+      <button type="submit">Add Parent</button>
+    </form>
     <div class="table-scroll">
       <table class="parents-table">
         <thead><tr><th>Name</th><th>Linked Child</th><th></th></tr></thead>
         <tbody id="parents-body"></tbody>
       </table>
     </div>
-    <h3>Add Parent</h3>
-    <form id="add-parent-form">
-      <input name="name" placeholder="Name" required />
-      <input name="phone" placeholder="Phone" />
-      <input name="email" placeholder="Email (optional)" />
-      <button type="submit">Add Parent</button>
-    </form>
   `;
 
   const tbody = container.querySelector('#parents-body');
   const form = container.querySelector('#add-parent-form');
+  const addToggle = container.querySelector('#add-toggle');
   const expandedIds = new Set();
+  const editingIds = new Set();
+
+  addToggle.addEventListener('click', () => {
+    const willShow = form.hidden;
+    form.hidden = !willShow;
+    addToggle.setAttribute('aria-expanded', String(willShow));
+  });
 
   function render() {
     const parents = getParents();
@@ -45,20 +53,28 @@ export function mount(container) {
         .map(pl => `<option value="${pl.id}">${escapeHtml(pl.firstName)} ${escapeHtml(pl.lastName)}</option>`)
         .join('');
       const isExpanded = expandedIds.has(p.id);
+      const isEditing = editingIds.has(p.id);
       return `
         <tr data-id="${p.id}">
-          <td><textarea class="f-name" rows="1">${escapeHtml(p.name)}</textarea></td>
+          <td>${isEditing
+            ? `<textarea class="f-name" rows="1">${escapeHtml(p.name)}</textarea>`
+            : `<div class="name-display">${escapeHtml(p.name)}</div>`}</td>
           <td>${linkedNames}</td>
           <td><button class="expand-toggle" aria-expanded="${isExpanded}" title="More fields">${isExpanded ? '▾' : '▸'}</button></td>
         </tr>
         <tr class="expand-row" data-id="${p.id}" ${isExpanded ? '' : 'hidden'}>
           <td colspan="3">
             <div class="expand-grid">
-              <div class="field-row"><label>Phone</label><input class="f-phone" value="${escapeHtml(p.phone)}" /></div>
-              <div class="field-row"><label>Email</label><input class="f-email" value="${escapeHtml(p.email)}" /></div>
+              <div class="field-row"><label>Phone</label>
+                ${isEditing ? `<input class="f-phone" value="${escapeHtml(p.phone)}" />` : `<span>${escapeHtml(p.phone) || '—'}</span>`}</div>
+              <div class="field-row"><label>Email</label>
+                ${isEditing ? `<input class="f-email" value="${escapeHtml(p.email)}" />` : `<span>${escapeHtml(p.email) || '—'}</span>`}</div>
               ${options ? `<div class="field-row"><label>Link child</label>
                 <select class="link-select"><option value="">+ link player…</option>${options}</select></div>` : ''}
-              <div class="field-row"><button class="delete-btn">Delete</button></div>
+              <div class="field-row">
+                <button class="edit-toggle">${isEditing ? 'Done' : 'Edit'}</button>
+                <button class="delete-btn">Delete</button>
+              </div>
             </div>
           </td>
         </tr>`;
@@ -82,7 +98,16 @@ export function mount(container) {
       deletePlayerParent(e.target.dataset.link);
     }
     if (e.target.classList.contains('expand-toggle')) {
-      if (expandedIds.has(id)) expandedIds.delete(id); else expandedIds.add(id);
+      if (expandedIds.has(id)) {
+        expandedIds.delete(id);
+        editingIds.delete(id);
+      } else {
+        expandedIds.add(id);
+      }
+      render();
+    }
+    if (e.target.classList.contains('edit-toggle')) {
+      if (editingIds.has(id)) editingIds.delete(id); else editingIds.add(id);
       render();
     }
   });

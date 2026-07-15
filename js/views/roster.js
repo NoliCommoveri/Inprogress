@@ -3,7 +3,7 @@ import {
   getPlayers, addPlayer, updatePlayer, deletePlayer,
   getSettings, updateSettings, subscribe
 } from '../data.js';
-import { escapeHtml } from '../util.js';
+import { escapeHtml, centsToDollarsStr } from '../util.js';
 
 const COMMON_POSITIONS = ['Forward', 'Midfielder', 'Defender', 'Goalkeeper'];
 
@@ -13,6 +13,15 @@ export function mount(container) {
     <datalist id="position-list">
       ${COMMON_POSITIONS.map(p => `<option value="${p}"></option>`).join('')}
     </datalist>
+    <button type="button" id="add-toggle" class="add-toggle-btn" aria-expanded="false">+ Add Player</button>
+    <form id="add-player-form" class="add-form" hidden>
+      <input name="jerseyNumber" placeholder="#" size="3" />
+      <input name="firstName" placeholder="First name" required />
+      <input name="lastName" placeholder="Last name" required />
+      <input name="position" placeholder="Position" list="position-list" />
+      <label class="check-label"><input type="checkbox" name="followPlayer" /> Follow this player</label>
+      <button type="submit">Add Player</button>
+    </form>
     <div class="table-scroll">
       <table class="roster-table">
         <thead>
@@ -21,31 +30,37 @@ export function mount(container) {
         <tbody id="roster-body"></tbody>
       </table>
     </div>
-    <h3>Add Player</h3>
-    <form id="add-player-form">
-      <input name="jerseyNumber" placeholder="#" size="3" />
-      <input name="firstName" placeholder="First name" required />
-      <input name="lastName" placeholder="Last name" required />
-      <input name="position" placeholder="Position" list="position-list" />
-      <label class="check-label"><input type="checkbox" name="followPlayer" /> Follow this player</label>
-      <button type="submit">Add Player</button>
-    </form>
   `;
 
   const tbody = container.querySelector('#roster-body');
   const form = container.querySelector('#add-player-form');
+  const addToggle = container.querySelector('#add-toggle');
   const expandedIds = new Set();
+  const editingIds = new Set();
+
+  addToggle.addEventListener('click', () => {
+    const willShow = form.hidden;
+    form.hidden = !willShow;
+    addToggle.setAttribute('aria-expanded', String(willShow));
+  });
 
   function render() {
     const players = getPlayers();
     const myId = getSettings().myPlayerId;
     tbody.innerHTML = players.map(p => {
       const isExpanded = expandedIds.has(p.id);
+      const isEditing = editingIds.has(p.id);
       return `
       <tr data-id="${p.id}" class="${p.id === myId ? 'my-player' : ''} ${!p.active ? 'inactive' : ''}">
-        <td><input class="f-jersey" value="${escapeHtml(p.jerseyNumber)}" /></td>
-        <td><input class="f-first" value="${escapeHtml(p.firstName)}" /></td>
-        <td><input class="f-last" value="${escapeHtml(p.lastName)}" /></td>
+        ${isEditing ? `
+          <td><input class="f-jersey" value="${escapeHtml(p.jerseyNumber)}" /></td>
+          <td><input class="f-first" value="${escapeHtml(p.firstName)}" /></td>
+          <td><input class="f-last" value="${escapeHtml(p.lastName)}" /></td>
+        ` : `
+          <td>${escapeHtml(p.jerseyNumber)}</td>
+          <td>${escapeHtml(p.firstName)}</td>
+          <td>${escapeHtml(p.lastName)}</td>
+        `}
         <td><button class="expand-toggle" aria-expanded="${isExpanded}" title="More fields">${isExpanded ? '▾' : '▸'}</button></td>
       </tr>
       <tr class="expand-row" data-id="${p.id}" ${isExpanded ? '' : 'hidden'}>
@@ -54,13 +69,21 @@ export function mount(container) {
             <div class="field-row"><label>Follow</label>
               <button class="star-btn" title="Mark as my player">${p.id === myId ? '★' : '☆'}</button></div>
             <div class="field-row"><label>Position</label>
-              <input class="f-position" value="${escapeHtml(p.position)}" list="position-list" /></div>
+              ${isEditing
+                ? `<input class="f-position" value="${escapeHtml(p.position)}" list="position-list" />`
+                : `<span>${escapeHtml(p.position) || '—'}</span>`}</div>
             <div class="field-row"><label>Active</label>
-              <input type="checkbox" class="f-active" ${p.active ? 'checked' : ''} /></div>
+              ${isEditing
+                ? `<input type="checkbox" class="f-active" ${p.active ? 'checked' : ''} />`
+                : `<span>${p.active ? 'Yes' : 'No'}</span>`}</div>
             <div class="field-row"><label>Balance</label>
-              <span>$</span><input class="f-balance" type="number" step="0.01"
-                value="${(p.outstandingBalanceCents / 100).toFixed(2)}" /></div>
-            <div class="field-row"><button class="delete-btn">Delete</button></div>
+              ${isEditing
+                ? `<span>$</span><input class="f-balance" type="number" step="0.01" value="${centsToDollarsStr(p.outstandingBalanceCents)}" />`
+                : `<span>$${centsToDollarsStr(p.outstandingBalanceCents)}</span>`}</div>
+            <div class="field-row">
+              <button class="edit-toggle">${isEditing ? 'Done' : 'Edit'}</button>
+              <button class="delete-btn">Delete</button>
+            </div>
           </div>
         </td>
       </tr>`;
@@ -79,7 +102,16 @@ export function mount(container) {
       if (confirm('Delete this player? This cannot be undone.')) deletePlayer(id);
     }
     if (e.target.classList.contains('expand-toggle')) {
-      if (expandedIds.has(id)) expandedIds.delete(id); else expandedIds.add(id);
+      if (expandedIds.has(id)) {
+        expandedIds.delete(id);
+        editingIds.delete(id);
+      } else {
+        expandedIds.add(id);
+      }
+      render();
+    }
+    if (e.target.classList.contains('edit-toggle')) {
+      if (editingIds.has(id)) editingIds.delete(id); else editingIds.add(id);
       render();
     }
   });
