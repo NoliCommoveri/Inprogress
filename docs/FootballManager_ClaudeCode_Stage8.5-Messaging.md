@@ -14,8 +14,23 @@ migration. Read the existing `js/data.js`, `js/views/schedule.js`, and
 `js/views/parents.js` before editing so this merges cleanly rather than
 duplicating what's there.
 
-Your job: a new `js/messaging.js` module, a "Weekly Update" panel on the
-Schedule view, and per-parent quick-contact links on the Parents view.
+Your job: a new `js/messaging.js` module and a new **Communications** view
+(`js/views/communications.js`, routed at `#/communications`, nav link placed
+after Parents) holding both the "Weekly Update" broadcast panel and a
+per-parent quick-contact list — rather than splitting that UI across the
+Schedule and Parents views. Read the existing `js/data.js`,
+`js/views/schedule.js`, and `js/views/parents.js` before editing so this
+merges cleanly rather than duplicating what's there.
+
+**Revision note:** an earlier draft of this stage put the Weekly Update
+panel on Schedule and the quick-contact links inline in the Parents table.
+Revised to a single dedicated nav destination instead, so both messaging
+features live in one place rather than being scattered across two
+unrelated views. Also see `FootballManager_UXReview_2026-07-15.md` — the
+admin's mobile-layout feedback from that review (compact columns, avoid
+page-level horizontal overflow, escape everything going into `innerHTML`)
+applies here too, since Communications adds a table and a text block of
+its own.
 
 ## Hard rules (carry over from the base spec)
 
@@ -125,99 +140,137 @@ export async function copyToClipboard(text) {
 
 ---
 
-## Extend `js/views/schedule.js` — Weekly Update panel
+## Nav + router
 
-Add this markup inside the existing `mount()`'s initial `container.innerHTML`,
-after the `<form id="add-event-form">` block:
+`index.html` — add the nav link after Parents, before Snacks (a
+Communications home sits naturally next to the Parents contact list it
+draws from):
 
 ```html
-<section class="weekly-update">
-  <h3>Weekly Update</h3>
-  <pre id="weekly-update-preview"></pre>
-  <a id="email-all-btn" class="btn">Email All Parents</a>
-  <button type="button" id="copy-update-btn">Copy Message</button>
-  <span id="copy-feedback"></span>
-</section>
+<a href="#/parents">Parents</a>
+<a href="#/communications">Communications</a>
+<a href="#/snacks">Snacks</a>
 ```
 
-Add to imports:
-```js
-import { buildWeeklyUpdateText, getAllParentEmails, mailtoLink, copyToClipboard } from '../messaging.js';
-```
-
-Add these element refs near the existing ones (`tbody`, `form`, `oppSelect`):
-```js
-const preview = container.querySelector('#weekly-update-preview');
-const emailAllBtn = container.querySelector('#email-all-btn');
-const copyBtn = container.querySelector('#copy-update-btn');
-const feedback = container.querySelector('#copy-feedback');
-```
-
-Add a `renderWeeklyUpdate()` function and call it at the end of the existing
-`render()` function (so it re-runs on every `subscribe()` fire, same as the
-rest of the view):
+`js/router.js` — add the matching route entry:
 
 ```js
-function renderWeeklyUpdate() {
-  const text = buildWeeklyUpdateText();
-  preview.textContent = text;              // textContent — no escaping needed, no injection risk
-
-  const emails = getAllParentEmails();
-  emailAllBtn.href = mailtoLink(emails, 'Weekly Practice & Snack Schedule', text);
-  emailAllBtn.classList.toggle('disabled', emails.length === 0);
-  emailAllBtn.textContent = emails.length
-    ? `Email All Parents (${emails.length})`
-    : 'Email All Parents (no parent emails on file)';
-}
+'#/communications': () => import('./views/communications.js'),
 ```
-
-Wire the copy button once, outside `render()` (it's a static handler, not
-something that needs re-registering per render):
-
-```js
-copyBtn.addEventListener('click', async () => {
-  const ok = await copyToClipboard(buildWeeklyUpdateText());
-  feedback.textContent = ok ? 'Copied!' : 'Copy failed — select the text above and copy manually.';
-  setTimeout(() => { feedback.textContent = ''; }, 3000);
-});
-```
-
-Finally, inside the existing `render()` function body, add a call to
-`renderWeeklyUpdate();` (anywhere after the table re-render is fine — the
-two sections are independent).
 
 ---
 
-## Extend `js/views/parents.js` — per-parent quick contact
+## New file: `js/views/communications.js`
 
-Add to imports:
+One view holding both messaging features — the broadcast digest and the
+per-parent quick-contact list — so there's a single place to find
+"send something to a parent," instead of splitting it across Schedule and
+Parents.
+
 ```js
-import { mailtoLink, smsLink } from '../messaging.js';
+import { getParents, subscribe } from '../data.js';
+import { buildWeeklyUpdateText, getAllParentEmails, mailtoLink, smsLink, copyToClipboard } from '../messaging.js';
+import { escapeHtml } from '../util.js';
+
+export function mount(container) {
+  container.innerHTML = `
+    <h2>Communications</h2>
+    <section class="weekly-update">
+      <h3>Weekly Update</h3>
+      <pre id="weekly-update-preview"></pre>
+      <a id="email-all-btn" class="btn-link"></a>
+      <button type="button" id="copy-update-btn">Copy Message</button>
+      <span id="copy-feedback"></span>
+    </section>
+    <section class="contacts-section">
+      <h3>Parent Contacts</h3>
+      <div class="table-scroll">
+        <table class="contacts-table">
+          <thead><tr><th>Name</th><th></th><th></th></tr></thead>
+          <tbody id="contacts-body"></tbody>
+        </table>
+      </div>
+    </section>
+  `;
+
+  const preview = container.querySelector('#weekly-update-preview');
+  const emailAllBtn = container.querySelector('#email-all-btn');
+  const copyBtn = container.querySelector('#copy-update-btn');
+  const feedback = container.querySelector('#copy-feedback');
+  const contactsBody = container.querySelector('#contacts-body');
+
+  function renderWeeklyUpdate() {
+    const text = buildWeeklyUpdateText();
+    preview.textContent = text;              // textContent — no escaping needed, no injection risk
+
+    const emails = getAllParentEmails();
+    emailAllBtn.href = mailtoLink(emails, 'Weekly Practice & Snack Schedule', text);
+    emailAllBtn.classList.toggle('disabled', emails.length === 0);
+    emailAllBtn.textContent = emails.length
+      ? `Email All Parents (${emails.length})`
+      : 'Email All Parents (no parent emails on file)';
+  }
+
+  function renderContacts() {
+    const parents = getParents();
+    contactsBody.innerHTML = parents.map(p => `
+      <tr>
+        <td><div class="name-display">${escapeHtml(p.name)}</div></td>
+        <td>${p.email ? `<a href="${escapeHtml(mailtoLink(p.email, '', ''))}">Email</a>` : '—'}</td>
+        <td>${p.phone ? `<a href="${escapeHtml(smsLink(p.phone, ''))}">Text</a>` : '—'}</td>
+      </tr>
+    `).join('') || '<tr><td colspan="3">No parents yet.</td></tr>';
+  }
+
+  function render() {
+    renderWeeklyUpdate();
+    renderContacts();
+  }
+
+  copyBtn.addEventListener('click', async () => {
+    const ok = await copyToClipboard(buildWeeklyUpdateText());
+    feedback.textContent = ok ? 'Copied!' : 'Copy failed — select the text above and copy manually.';
+    setTimeout(() => { feedback.textContent = ''; }, 3000);
+  });
+
+  const unsub = subscribe(render);
+  render();
+  return () => unsub();
+}
 ```
 
-In the existing per-row template inside `render()`, add a new `<td>` after
-the existing "Players" column, before the delete button's `<td>`:
+Notes tying this back to the existing mobile-layout conventions
+(`FootballManager_UXReview_2026-07-15.md`):
 
-```html
-<td>
-  ${p.email ? `<a href="${escapeHtml(mailtoLink(p.email, '', ''))}">Email</a>` : ''}
-  ${p.phone ? `<a href="${escapeHtml(smsLink(p.phone, ''))}">Text</a>` : ''}
-</td>
-```
-
-(Also add the matching `<th></th>` to the table's header row.) These are
-deliberately blank-subject/blank-body — this is the one-off "I need to
-reach this specific parent right now" path, distinct from the Schedule
-view's broadcast digest above. `escapeHtml()` wraps the constructed URL
-even though `URLSearchParams`/`encodeURIComponent` already percent-encode
-most special characters — a defensive habit worth keeping since these
-strings still originate from user-entered record fields.
+- The contacts table reuses the `.table-scroll` wrapper every other table
+  in the app uses, so it degrades to an internal scroll rather than
+  page-level overflow on narrow phones — same fix that was applied to
+  Roster/Parents/Schedule/Snacks.
+- Columns are deliberately minimal (Name, Email link, Text link) — no raw
+  email/phone text, no expand/collapse toggle needed, since three narrow
+  columns already fit a 320px viewport without competing for space the way
+  the wider CRUD tables did.
+- The digest `<pre>` block wraps (`white-space: pre-wrap; word-break:
+  break-word`) instead of relying on browser default `<pre>` behavior,
+  which does *not* wrap and would otherwise reproduce the same
+  horizontal-overflow bug the UX review fixed on the tables.
+- `escapeHtml()` wraps every constructed `href` even though
+  `URLSearchParams`/`encodeURIComponent` already percent-encode most
+  special characters — a defensive habit worth keeping since these strings
+  still originate from user-entered record fields.
+- No native `prompt()`/`alert()` used anywhere in this view, consistent
+  with the UX review's replacement of `prompt()` with a styled `<dialog>`
+  elsewhere — this stage doesn't need a dialog at all since there's no
+  free-text input to collect.
 
 ---
 
 ## Stage 8.5 acceptance gate
 
-- **Schedule view**: the Weekly Update panel shows a live plain-text digest
+- **Nav**: a "Communications" link appears after "Parents" in `#main-nav`
+  and routes to `#/communications`; it highlights `.active` the same way
+  every other nav link does.
+- **Communications view — Weekly Update**: shows a live plain-text digest
   of the next 7 days of practices/games, including opponent names, location,
   and assigned snack parent(s); it updates immediately when an event or
   snack assignment changes elsewhere in the app (via the existing
@@ -233,10 +286,15 @@ strings still originate from user-entered record fields.
   shows "Copied!" feedback that clears after a few seconds; test by pasting
   elsewhere. If clipboard permission is denied, the fallback message shows
   instead of a silent failure or thrown error.
-- **Parents view**: each row with an email shows a working "Email" link
-  (opens mail client, blank subject/body, correct recipient); each row with
-  a phone shows a working "Text" link. A parent with neither field shows
-  neither link, no broken `href`.
+- **Communications view — Parent Contacts**: each row with an email shows a
+  working "Email" link (opens mail client, blank subject/body, correct
+  recipient); each row with a phone shows a working "Text" link. A parent
+  with neither field shows an em dash in both columns, no broken `href`.
+- **Mobile layout**: at 320/360/375/390px viewport widths, zero
+  page-level horizontal overflow (`document.documentElement.scrollWidth -
+  clientWidth === 0`) on the Communications view — both the digest `<pre>`
+  and the contacts table stay contained, matching the standard set in
+  `FootballManager_UXReview_2026-07-15.md` for the other four views.
 - No new entries in `localStorage` — confirm via DevTools that `stm:v1`'s
   shape and `schemaVersion` are unchanged after using every feature in this
   stage.
