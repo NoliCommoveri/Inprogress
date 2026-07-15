@@ -43,18 +43,25 @@ Live-Pages verification still needs the two unchecked items above._
 
 This is the foundation. Build and test it in isolation before any UI.
 
-- [ ] Constants: `STORAGE_KEY = 'stm:v1'`, `SCHEMA_VERSION = 1`.
-- [ ] `uuid()` with `crypto.randomUUID()` + insecure-context fallback (§9.1).
-- [ ] `emptyData()` returning the full versioned shape (§3) — all arrays
+- [x] Constants: `STORAGE_KEY = 'stm:v1'`, `SCHEMA_VERSION = 1`.
+- [x] `uuid()` with `crypto.randomUUID()` + insecure-context fallback (§9.1).
+- [x] `emptyData()` returning the full versioned shape (§3) — all arrays
       present, `meta` and `settings` populated.
-- [ ] In-memory cache + `getData()` / `loadData()` / `saveData()`.
+- [x] In-memory cache + `getData()` / `loadData()` / `saveData()`.
       `saveData()` stamps `meta.lastModifiedAt`.
-- [ ] Subscription system: `subscribe(fn)` + `_subs` set.
-- [ ] `migrate()` — pass-through at v1, but **every** load path routes through
+- [x] Subscription system: `subscribe(fn)` + `_subs` set.
+- [x] `migrate()` — pass-through at v1, but **every** load path routes through
       it (§9.4).
 
 **Gate:** in the console, `loadData()` on a fresh origin seeds an empty store;
 `saveData()` persists it; reloading the page rehydrates the same object.
+
+_Verified locally (`python3 -m http.server` + headless Chromium, fresh
+browser context): `loadData()` returns the full empty shape (schemaVersion 1,
+`meta`/`settings` populated, all 9 arrays present); `saveData()` persists to
+`localStorage['stm:v1']` and stamps `meta.lastModifiedAt`; reloading the page
+and calling `getData()` rehydrates the same `lastModifiedAt`. No console
+errors (aside from the unrelated `/favicon.ico` 404)._
 
 ---
 
