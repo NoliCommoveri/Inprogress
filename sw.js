@@ -1,7 +1,9 @@
-const CACHE_NAME = 'stm-shell-v2';
+const CACHE_NAME = 'stm-shell-v3';
 
-// App shell only. `js/*.js` is intentionally excluded — it changes often
-// during development and should always come from the network.
+// App shell + app JS. Earlier versions excluded `js/*.js` so it always came
+// from the network, but that leaves the cached shell unable to hydrate
+// offline (its module imports 404 with no network). Now precached and
+// refreshed via CACHE_NAME bumps on deploy instead.
 const SHELL_FILES = [
   './',
   './index.html',
@@ -23,6 +25,20 @@ const SHELL_FILES = [
   './icons/icon-384x384.png',
   './icons/icon-512x512.png',
   './icons/icon-512x512-maskable.png',
+  './js/data.js',
+  './js/util.js',
+  './js/router.js',
+  './js/seed.js',
+  './js/nudge.js',
+  './js/messaging.js',
+  './js/export.js',
+  './js/views/roster.js',
+  './js/views/parents.js',
+  './js/views/schedule.js',
+  './js/views/snacks.js',
+  './js/views/fundraisers.js',
+  './js/views/settings.js',
+  './js/views/communications.js',
   './js/vendor/xlsx.full.min.js',
   './js/vendor/jspdf.umd.min.js'
 ];
@@ -62,8 +78,8 @@ self.addEventListener('fetch', (event) => {
   }
 
   if (request.mode === 'navigate') {
-    // App code (js/*.js) always goes to the network; only the shell page
-    // itself falls back to cache so the app still opens offline.
+    // Network-first for navigations (fresh HTML when online); falls back to
+    // the cached shell so the app still opens offline.
     event.respondWith(
       fetch(request).catch(() => caches.match('./index.html'))
     );

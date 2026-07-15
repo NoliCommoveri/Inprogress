@@ -278,9 +278,36 @@ export function exportBackup() {
   URL.revokeObjectURL(a.href);
 }
 
+const REQUIRED_ARRAYS = [
+  'players', 'parents', 'playerParents', 'opponents', 'events',
+  'snackAssignments', 'fundraiserPlatforms', 'fundraisers', 'fundraiserOccurrences'
+];
+
+function isValidStore(data) {
+  if (!data || typeof data !== 'object' || Array.isArray(data)) return false;
+  if (typeof data.schemaVersion !== 'number') return false;
+  if (!data.meta || typeof data.meta !== 'object') return false;
+  if (!data.settings || typeof data.settings !== 'object') return false;
+  return REQUIRED_ARRAYS.every(k => Array.isArray(data[k]));
+}
+
 export async function importBackup(file) {
-  const parsed = migrate(JSON.parse(await file.text()));
-  _cache = parsed;
+  let parsed;
+  try {
+    parsed = JSON.parse(await file.text());
+  } catch {
+    throw new Error("That file isn't valid JSON — it may be corrupted or not a backup file.");
+  }
+  if (!isValidStore(parsed)) {
+    throw new Error("That file doesn't look like a Football Manager backup (missing expected data). Nothing was changed.");
+  }
+  if (parsed.schemaVersion > SCHEMA_VERSION) {
+    // A backup from a NEWER version of the app. We can migrate forward, never
+    // safely backward — refuse rather than silently drop fields we don't know.
+    throw new Error("This backup was made by a newer version of the app. Update the app before importing it. Nothing was changed.");
+  }
+  const migrated = migrate(parsed);   // shape + meta now guaranteed present
+  _cache = migrated;
   saveData({ countAsChange: false });
 }
 
