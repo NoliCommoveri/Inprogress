@@ -78,6 +78,10 @@ header h1 {
   padding: 20px;
 }
 
+@media (max-width: 480px) {
+  #outlet { padding: 8px; }
+}
+
 section, .fundraiser-card {
   background: var(--color-surface);
   border: 1px solid var(--color-border);
@@ -87,6 +91,12 @@ section, .fundraiser-card {
 }
 
 /* Tables */
+.table-scroll {
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  margin-bottom: var(--gap);
+}
+
 table {
   width: 100%;
   border-collapse: collapse;
@@ -96,6 +106,8 @@ table {
   overflow: hidden;
   margin-bottom: var(--gap);
 }
+
+.table-scroll table { margin-bottom: 0; }
 
 th, td {
   padding: 8px 10px;
@@ -119,7 +131,7 @@ tr.inactive { opacity: 0.55; }
 tr.unassigned-flag { background: #fdecea; }
 
 /* Forms & inputs */
-input, select, button {
+input, select, button, textarea {
   font: inherit;
   padding: 5px 8px;
   border: 1px solid var(--color-border);
@@ -128,18 +140,22 @@ input, select, button {
   color: var(--color-text);
 }
 
-input:focus, select:focus, button:focus {
+input:focus, select:focus, button:focus, textarea:focus {
   outline: 2px solid var(--color-primary);
   outline-offset: 1px;
 }
 
-table input, table select { width: auto; min-width: 0; }
+table input, table select, table textarea { width: auto; min-width: 0; }
 
 form {
   display: flex;
   flex-wrap: wrap;
   gap: 8px;
   align-items: center;
+}
+
+form[hidden] {
+  display: none;
 }
 
 button {
@@ -168,7 +184,6 @@ button:hover { background: var(--color-primary-dark); }
   border: none;
   color: var(--color-accent);
   font-size: 1.1rem;
-  padding: 0 4px;
 }
 
 .star-btn:hover { background: none; color: var(--color-accent); opacity: 0.7; }
@@ -217,3 +232,179 @@ button:hover { background: var(--color-primary-dark); }
 }
 
 .import-label { display: inline-flex; align-items: center; gap: 6px; }
+
+.check-label { display: inline-flex; align-items: center; gap: 6px; }
+
+.add-toggle-btn {
+  margin-bottom: var(--gap);
+}
+
+.add-form {
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius);
+  padding: var(--gap);
+  margin-bottom: var(--gap);
+}
+
+/* Modals */
+dialog {
+  background: var(--color-surface);
+  color: var(--color-text);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius);
+  padding: var(--gap);
+  min-width: 280px;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.18);
+}
+
+dialog::backdrop {
+  background: rgba(15, 23, 30, 0.45);
+}
+
+dialog h3 {
+  margin-top: 0;
+}
+
+dialog form {
+  flex-direction: column;
+  align-items: stretch;
+}
+
+dialog form input, dialog form select {
+  width: 100%;
+}
+
+.modal-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+  margin-top: 4px;
+}
+
+.modal-actions .cancel-btn {
+  background: var(--color-surface);
+  color: var(--color-text);
+  border-color: var(--color-border);
+}
+
+.modal-actions .cancel-btn:hover {
+  background: #eef1f4;
+}
+
+/* Compact roster/parents/schedule/snacks columns + expandable rows */
+.roster-table th, .roster-table td,
+.parents-table th, .parents-table td,
+.schedule-table th, .schedule-table td,
+.snacks-table th, .snacks-table td {
+  padding: 6px 2px;
+}
+
+.roster-table th:first-child, .roster-table td:first-child,
+.parents-table th:first-child, .parents-table td:first-child,
+.schedule-table th:first-child, .schedule-table td:first-child,
+.snacks-table th:first-child, .snacks-table td:first-child {
+  padding-left: 4px;
+}
+
+.roster-table .f-jersey {
+  width: 4ch;
+  padding: 5px 6px;
+  text-align: center;
+}
+
+.roster-table .f-first,
+.roster-table .f-last {
+  width: 11ch;
+  padding: 4px;
+}
+
+.parents-table .f-name {
+  width: 100%;
+  resize: none;
+  overflow: hidden;
+  white-space: pre-wrap;
+  word-break: break-word;
+  line-height: 1.3;
+}
+
+.name-display {
+  padding: 5px 4px;
+  word-break: break-word;
+  line-height: 1.3;
+}
+
+.schedule-table .f-date {
+  width: 128px;
+  padding: 5px 4px;
+}
+
+.schedule-table .f-start {
+  width: 92px;
+  padding: 5px 4px;
+}
+
+.snacks-table .col-date {
+  width: 128px;
+  white-space: nowrap;
+}
+
+.snacks-table .col-time {
+  width: 92px;
+  white-space: nowrap;
+}
+
+.schedule-table .f-type {
+  width: 88px;
+  padding: 5px 4px;
+}
+
+.star-btn, .expand-toggle {
+  padding: 0 2px;
+}
+
+.expand-toggle {
+  background: none;
+  border: none;
+  color: var(--color-text-muted);
+  font-size: 0.9rem;
+}
+
+.expand-toggle:hover { background: none; opacity: 0.7; }
+
+.expand-row td {
+  background: #fafbfc;
+  padding: 8px 10px;
+}
+
+.expand-grid {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.expand-grid .field-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 30px;
+}
+
+.expand-grid .field-row label {
+  flex: 0 0 70px;
+  font-size: 0.8rem;
+  color: var(--color-text-muted);
+}
+
+.expand-grid .field-row input,
+.expand-grid .field-row select {
+  flex: 1;
+  min-width: 0;
+}
+
+.linked-child {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  flex-wrap: wrap;
+}
