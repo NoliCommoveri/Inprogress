@@ -16,7 +16,7 @@ export function mount(container) {
     <div class="table-scroll">
       <table class="roster-table">
         <thead>
-          <tr><th></th><th>#</th><th>First</th><th>Last</th><th></th></tr>
+          <tr><th>#</th><th>First</th><th>Last</th><th></th></tr>
         </thead>
         <tbody id="roster-body"></tbody>
       </table>
@@ -27,6 +27,7 @@ export function mount(container) {
       <input name="firstName" placeholder="First name" required />
       <input name="lastName" placeholder="Last name" required />
       <input name="position" placeholder="Position" list="position-list" />
+      <label class="check-label"><input type="checkbox" name="followPlayer" /> Follow this player</label>
       <button type="submit">Add Player</button>
     </form>
   `;
@@ -42,15 +43,16 @@ export function mount(container) {
       const isExpanded = expandedIds.has(p.id);
       return `
       <tr data-id="${p.id}" class="${p.id === myId ? 'my-player' : ''} ${!p.active ? 'inactive' : ''}">
-        <td><button class="star-btn" title="Mark as my player">${p.id === myId ? '★' : '☆'}</button></td>
         <td><input class="f-jersey" value="${escapeHtml(p.jerseyNumber)}" /></td>
         <td><input class="f-first" value="${escapeHtml(p.firstName)}" /></td>
         <td><input class="f-last" value="${escapeHtml(p.lastName)}" /></td>
         <td><button class="expand-toggle" aria-expanded="${isExpanded}" title="More fields">${isExpanded ? '▾' : '▸'}</button></td>
       </tr>
       <tr class="expand-row" data-id="${p.id}" ${isExpanded ? '' : 'hidden'}>
-        <td colspan="5">
+        <td colspan="4">
           <div class="expand-grid">
+            <div class="field-row"><label>Follow</label>
+              <button class="star-btn" title="Mark as my player">${p.id === myId ? '★' : '☆'}</button></div>
             <div class="field-row"><label>Position</label>
               <input class="f-position" value="${escapeHtml(p.position)}" list="position-list" /></div>
             <div class="field-row"><label>Active</label>
@@ -62,7 +64,7 @@ export function mount(container) {
           </div>
         </td>
       </tr>`;
-    }).join('') || '<tr><td colspan="5">No players yet.</td></tr>';
+    }).join('') || '<tr><td colspan="4">No players yet.</td></tr>';
   }
 
   tbody.addEventListener('click', (e) => {
@@ -100,12 +102,14 @@ export function mount(container) {
   form.addEventListener('submit', (e) => {
     e.preventDefault();
     const fd = new FormData(form);
-    addPlayer({
+    const followPlayer = fd.get('followPlayer') === 'on';
+    const player = addPlayer({
       jerseyNumber: fd.get('jerseyNumber').trim(),
       firstName: fd.get('firstName').trim(),
       lastName: fd.get('lastName').trim(),
       position: fd.get('position').trim()
     });
+    if (followPlayer) updateSettings({ myPlayerId: player.id });
     form.reset();
   });
 

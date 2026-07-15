@@ -47,7 +47,7 @@ export function mount(container) {
       const isExpanded = expandedIds.has(p.id);
       return `
         <tr data-id="${p.id}">
-          <td><input class="f-name" value="${escapeHtml(p.name)}" /></td>
+          <td><textarea class="f-name" rows="1">${escapeHtml(p.name)}</textarea></td>
           <td>${linkedNames}</td>
           <td><button class="expand-toggle" aria-expanded="${isExpanded}" title="More fields">${isExpanded ? '▾' : '▸'}</button></td>
         </tr>
@@ -63,6 +63,12 @@ export function mount(container) {
           </td>
         </tr>`;
     }).join('') || '<tr><td colspan="3">No parents yet.</td></tr>';
+    tbody.querySelectorAll('.f-name').forEach(autoSizeName);
+  }
+
+  function autoSizeName(el) {
+    el.style.height = 'auto';
+    el.style.height = el.scrollHeight + 'px';
   }
 
   tbody.addEventListener('click', (e) => {
@@ -79,6 +85,10 @@ export function mount(container) {
       if (expandedIds.has(id)) expandedIds.delete(id); else expandedIds.add(id);
       render();
     }
+  });
+
+  tbody.addEventListener('input', (e) => {
+    if (e.target.classList.contains('f-name')) autoSizeName(e.target);
   });
 
   tbody.addEventListener('change', (e) => {
