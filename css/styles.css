@@ -458,3 +458,92 @@ dialog form input, dialog form select {
   color: var(--color-text-muted);
   margin-left: 8px;
 }
+
+/* Team dashboard */
+.dashboard-cards {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: var(--gap);
+}
+
+.dashboard-cards section {
+  margin-bottom: 0;
+}
+
+.dashboard-cards h3 {
+  margin: 0 0 6px;
+  font-size: 0.9rem;
+  color: var(--color-text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+}
+
+.big-stat {
+  font-size: 2rem;
+  font-weight: 700;
+  margin: 0;
+}
+
+.vs-line {
+  font-size: 1.1rem;
+  margin: 0 0 4px;
+}
+
+.when-line, .loc-line {
+  margin: 0 0 2px;
+  color: var(--color-text-muted);
+  font-size: 0.9rem;
+}
+
+.muted {
+  color: var(--color-text-muted);
+  margin: 0;
+}
+
+.needs-attention {
+  border-color: var(--color-warning-border);
+  background: var(--color-warning-bg);
+}
+
+.needs-attention h3 {
+  margin-top: 0;
+}
+
+.attn-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 0;
+  border-bottom: 1px solid var(--color-warning-border);
+}
+
+.attn-row:last-child { border-bottom: none; }
+
+.attn-row span { flex: 1 1 auto; min-width: 200px; }
+
+/* Roster controls */
+.roster-controls {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--gap);
+  margin-bottom: var(--gap);
+}
+
+.roster-controls label {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 0.85rem;
+  color: var(--color-text-muted);
+}
+
+/* Schedule upcoming/past split */
+.schedule-group h3 {
+  margin-top: 0;
+}
+
+tr.stale-event td:first-child {
+  color: var(--color-danger);
+}

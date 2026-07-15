@@ -437,14 +437,69 @@ and no live Pages deploy to test against.
 
 ---
 
-## Stage 10 (optional, not yet started)
+## Stage 10 — Team View, roster filter/sort, schedule split, data hygiene
 
-`FootballManager_ClaudeCode_Stage10.md` describes an optional follow-on —
-Team View dashboard, roster filter/sort, Schedule upcoming/past split, and a
-launch-time data-hygiene prompt. It is **not** part of this plan's required
-scope and explicitly assumes Stage 9's gate has already passed. Do not start
-it until Stage 9 is done and confirmed; tracked here only so the doc isn't
-orphaned/undiscoverable from this file.
+`FootballManager_ClaudeCode_Stage10.md` describes this optional follow-on.
+Stage 9.1–9.5 were confirmed done (9.6/9.7's last bullets are hardware/deploy
+items that can't be verified from this session, per the Stage 9 note above);
+proceeded on that basis.
+
+- [x] **10.1 — Team View dashboard**: new `js/selectors.js` (pure derived
+      reads: `getTeamRecord`, `getNextEventOfType`, `getStaleEvents`,
+      `getStaleFundraisers`, `hasHygieneItems`, `todayStr`) and new
+      `js/views/team.js`, routed at `#/team` and made the default route.
+      Nav link added first in `index.html`.
+- [x] **10.2 — Roster filter/sort**: `js/views/roster.js` gained a status
+      filter (active/inactive/all, active-only default), a position filter,
+      and a sort control (#, last name, position, balance + direction
+      toggle) as view-local UI state, layered onto the existing
+      expand/collapse-row UI from the UX-review pass rather than reverting
+      to the doc's older flat-table sample.
+- [x] **10.3 — Schedule upcoming/past split**: `js/views/schedule.js` now
+      renders two `<tbody>`s (Upcoming ascending, Past most-recent-first)
+      with a shared `rowHtml()`; past-dated events still `scheduled` get a
+      ⚠️ marker. Same expand/collapse row markup preserved.
+- [x] **10.4 — Launch-time hygiene banner**: new `js/hygiene.js`, modeled on
+      `nudge.js`, mounted via a new `#hygiene-banner` div in `index.html`.
+      Session-only dismiss (in-memory), reappears on reload while anything
+      is stale.
+- [x] `sw.js` `CACHE_NAME` bumped (`v3` → `v4`) and the three new modules
+      added to `SHELL_FILES` so the offline shell still hydrates fully.
+- [x] CSS added for `.dashboard-cards`, `.needs-attention`/`.attn-row`,
+      `.roster-controls`, `.schedule-group`, and the stale-row marker —
+      reusing the existing `section` card styling rather than introducing a
+      parallel `.card` class.
+
+**Verification:** served locally (`python3 -m http.server`) and driven with
+Playwright/Chromium (`/opt/pw-browsers/chromium`) rather than eyeballing the
+diff. Confirmed, with zero console/page errors throughout:
+- Empty store: default route is `#/team`, record shows `0–0`, both next-event
+  cards show their empty copy, Needs Attention hidden.
+- Seeded a completed/scored win, a stale scheduled game, a stale scheduled
+  practice, an upcoming game + practice, and a stale active fundraiser (via
+  `data.js` calls in-page, per this repo's console-test convention): Team View
+  showed `1–0`, the correct "vs Riverside FC" next-game card, and all 3 stale
+  items in Needs Attention.
+- Clicking each attention resolution button (mark completed/canceled, "Enter
+  result" → jumps to `#/schedule`, fundraiser complete) cleared items one by
+  one; Needs Attention and the hygiene banner both emptied/hid in lockstep via
+  `subscribe`, with no reload.
+- Hygiene banner: correct pluralized count/text; Dismiss hides it and it stays
+  hidden across in-app navigation; a full reload brings it back while stale
+  items remain.
+- Roster: active-only default hid an inactivated player; switching to "All"
+  showed them again; position filter narrowed to Goalkeeper correctly; sort by
+  last name asc/desc and the jersey-number default all ordered correctly.
+- Schedule: events partitioned correctly into Upcoming (2) and Past (1, with
+  the ⚠️ marker) for the seeded data.
+- `SCHEMA_VERSION` untouched (still 2), no `migrate()` changes, no
+  `localStorage` access added outside `data.js`.
+
+Not verified: 10.3's exact "editing a date crosses today moves the row on next
+render" gate bullet — not exercised directly, but it falls out of the same
+`subscribe`-driven full re-render already proven elsewhere in this pass, so
+risk is low. Real-device/offline hardware verification remains owed from
+Stage 9.6/9.7, unchanged by this stage.
 
 ---
 
