@@ -7,12 +7,28 @@
   <link rel="stylesheet" href="./css/styles.css" />
 </head>
 <body>
-  <div id="app">Loading…</div>
+  <header>
+    <h1>Football Manager</h1>
+    <nav id="main-nav">
+      <a href="#/schedule">Schedule</a>
+      <a href="#/roster">Roster</a>
+      <a href="#/parents">Parents</a>
+      <a href="#/snacks">Snacks</a>
+      <a href="#/fundraisers">Fundraisers</a>
+      <a href="#/settings">Settings</a>
+    </nav>
+  </header>
+  <div id="nudge-banner" hidden></div>
+  <main id="outlet">Loading…</main>
+
   <script type="module">
-    import { getData } from './js/data.js';
     import { seedIfNeeded } from './js/seed.js';
+    import { initRouter } from './js/router.js';
+    import { initNudgeBanner } from './js/nudge.js';
+
     seedIfNeeded();
-    console.log('[Football Manager] boot OK, data =', getData());
+    initRouter(document.getElementById('outlet'), document.getElementById('main-nav'));
+    initNudgeBanner(document.getElementById('nudge-banner'));
   </script>
 </body>
 </html>

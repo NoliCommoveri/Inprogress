@@ -129,15 +129,22 @@ seeds once thanks to the new `isFirstRun()` check. No console errors._
 
 ## Stage 4 — App shell & routing (`router.js`)
 
-- [ ] Hash router (`#/roster`, `#/schedule`, …) — avoids the Pages deep-link
+- [x] Hash router (`#/roster`, `#/schedule`, …) — avoids the Pages deep-link
       404 problem (§2).
-- [ ] Nav chrome in `index.html` linking each view.
-- [ ] View-mount contract: each view reads via `getData()` on render and
+- [x] Nav chrome in `index.html` linking each view.
+- [x] View-mount contract: each view reads via `getData()` on render and
       registers a `subscribe()` callback (no locally cached records) (§9.2).
-- [ ] Default route + unknown-hash fallback.
+- [x] Default route + unknown-hash fallback.
 
 **Gate:** navigating hashes swaps views; refresh on a deep hash (e.g.
 `#/schedule`) loads correctly on the live Pages URL.
+
+_Verified locally (`python3 -m http.server` + headless Chromium): nav links
+swap views and gain the `active` class, a deep-hash reload (`#/roster`) loads
+that view directly with no flash of the default route, an unknown hash
+(`#/nope`) redirects to `#/schedule`, and 60 rounds of repeated navigation
+produced no console errors beyond an unrelated `/favicon.ico` 404. Live-Pages
+verification still needs to be confirmed on the deployed URL._
 
 ---
 
@@ -146,24 +153,39 @@ seeds once thanks to the new `isFirstRun()` check. No console errors._
 Build in this order (each only needs Stage 1–4). Every dropdown gets inline
 **"add new"** (§7). Every list re-renders on the `subscribe` callback.
 
-- [ ] **Roster** (`roster.js`): list/add/edit/deactivate players; `jerseyNumber`
+- [x] **Roster** (`roster.js`): list/add/edit/deactivate players; `jerseyNumber`
       as string; `position` free text with a datalist; **`outstandingBalanceCents`
       editable inline**; "my player" star toggles `settings.myPlayerId` and
       highlights the row.
-- [ ] **Parents** (`parents.js`): CRUD parents; manage `playerParents`
+- [x] **Parents** (`parents.js`): CRUD parents; manage `playerParents`
       (many-to-many, one parent across siblings); email optional.
-- [ ] **Schedule** (`schedule.js`): unified games + practices; shared
+- [x] **Schedule** (`schedule.js`): unified games + practices; shared
       list/calendar sorted by `date`+`startTime`; game-only fields hidden for
       practices; opponent dropdown; status + final score for completed games;
       highlight "my player" context where relevant.
-- [ ] **Snacks** (`snacks.js`): filter events, show assigned parent(s), support
+- [x] **Snacks** (`snacks.js`): filter events, show assigned parent(s), support
       multiple snack parents per event, **flag unassigned upcoming practices**.
-- [ ] **Fundraisers** (`fundraisers.js`): fundraisers + occurrences;
+- [x] **Fundraisers** (`fundraisers.js`): fundraisers + occurrences;
       `raised/goal` progress bar; occurrences listed with date ranges/locations;
       platform dropdown with add-new.
 
 **Gate:** you can run a full season's worth of data entry through the UI, and
 all of it survives a reload (because it's all going through `data.js`).
+
+_Verified locally (`python3 -m http.server` + headless Chromium, scripted
+through the actual UI): entered 3 players, 2 parents (one linked to two
+siblings), a practice and a game with an inline-added opponent, a snack
+assignment, and a fundraiser with an occurrence — all of it survived a
+reload. Deleting a parent removed her snack assignment and player link from
+the UI immediately with no manual refresh, while the linked player stayed on
+the roster. Deleting an opponent left its game in place with the opponent
+select reset to "no opponent". Starring then deleting a player cleared the
+roster highlight. The snacks view flagged an unassigned upcoming practice
+and stopped flagging it the instant a parent was assigned. This also
+surfaced and fixed a same-tab gap in `data.js`: `saveData()` previously only
+notified subscribers via the cross-tab `storage` event, so a view's own
+mutations never triggered its own re-render — it now notifies local
+subscribers on every save._
 
 ---
 
@@ -171,20 +193,35 @@ all of it survives a reload (because it's all going through `data.js`).
 
 The spec treats this as first-class, not an afterthought (§1.1, §7).
 
-- [ ] `exportBackup()` → download entire `stm:v1` as
+- [x] `exportBackup()` → download entire `stm:v1` as
       `stm-backup-YYYY-MM-DD.json`, then set `meta.lastBackupAt` (§9.5).
-- [ ] `importBackup(file)` → `migrate()` the parsed file, **confirm before
+- [x] `importBackup(file)` → `migrate()` the parsed file, **confirm before
       overwrite**, replace store, notify subs.
-- [ ] `backupNudgeDue()` logic: modified since last backup **and**
+- [x] `backupNudgeDue()` logic: modified since last backup **and**
       (age > 3 days OR change-count > 25) (§7).
-- [ ] Settings UI: team name/season, **"Last backup: N days ago"**, export/import
+- [x] Settings UI: team name/season, **"Last backup: N days ago"**, export/import
       buttons, and the **plaintext-PII warning** near the backup button (§7).
-- [ ] Nudge banner shown app-wide when `backupNudgeDue()` fires; optional
+- [x] Nudge banner shown app-wide when `backupNudgeDue()` fires; optional
       one-tap auto-backup download.
 
 **Gate:** export produces a valid JSON; importing it into a *different* browser
 profile reproduces the full store. The "N days ago" indicator and nudge behave
 correctly across dates.
+
+_Verified locally (`python3 -m http.server` + headless Chromium): export
+produces `stm-backup-YYYY-MM-DD.json` at `schemaVersion: 2` with
+`changesSinceBackup` reset to 0 and the status line flipping to "today"
+immediately. 26 small edits without exporting shows the nudge banner from
+every view, not just Settings; exporting clears it again. Manually pushing
+`lastModifiedAt`/`lastBackupAt` 4+ days apart triggers the nudge independent
+of change count. Importing an exported file into a fresh browser context
+reproduces the full store. A hand-built `schemaVersion: 1` file with no
+`changesSinceBackup` field imports cleanly and lands at `schemaVersion: 2`
+with `changesSinceBackup: 0`. Canceling the import confirm dialog leaves
+existing data untouched. This also surfaced and fixed a bug in
+`exportBackup()`: it built the downloaded JSON before resetting
+`lastBackupAt`/`changesSinceBackup` instead of after, so the backup file's
+own metadata was already stale the moment it was written._
 
 ---
 
