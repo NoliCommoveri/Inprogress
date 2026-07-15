@@ -70,27 +70,38 @@ errors (aside from the unrelated `/favicon.ico` 404)._
 The cascade/nullify rules are the whole point of the storage boundary. Get them
 right here so views never have to think about referential integrity.
 
-- [ ] `touch(rec)` helper.
-- [ ] **Add/update** helpers per entity (assign `id = uuid()` on create,
+- [x] `touch(rec)` helper.
+- [x] **Add/update** helpers per entity (assign `id = uuid()` on create,
       `touch()` on write, `saveData()`): players, parents, playerParents,
       opponents, events, snackAssignments, platforms, fundraisers, occurrences.
-- [ ] **Delete** helpers with the correct strategy (§9.3):
-  - [ ] `deleteParent` → cascade `playerParents`, **drop** its snack
+- [x] **Delete** helpers with the correct strategy (§9.3):
+  - [x] `deleteParent` → cascade `playerParents`, **drop** its snack
         assignments, remove parent.
-  - [ ] `deletePlayer` → cascade `playerParents`, null `settings.myPlayerId`
+  - [x] `deletePlayer` → cascade `playerParents`, null `settings.myPlayerId`
         if it matched, remove player.
-  - [ ] `deleteEvent` → cascade `snackAssignments`, remove event.
-  - [ ] `deleteOpponent` → **nullify** `event.opponentId` (keep the game),
+  - [x] `deleteEvent` → cascade `snackAssignments`, remove event.
+  - [x] `deleteOpponent` → **nullify** `event.opponentId` (keep the game),
         remove opponent.
-  - [ ] `deleteFundraiser` → cascade `fundraiserOccurrences`, remove fundraiser.
-  - [ ] `deletePlatform` → **nullify** `fundraiser.platformId`, remove platform.
-- [ ] Thin getters used by export: `getEventById`, `getOpponentById`,
+  - [x] `deleteFundraiser` → cascade `fundraiserOccurrences`, remove fundraiser.
+  - [x] `deletePlatform` → **nullify** `fundraiser.platformId`, remove platform.
+- [x] Thin getters used by export: `getEventById`, `getOpponentById`,
       `getParentById`, `getSnackAssignmentsForEvent`.
-- [ ] Money is **integer cents** everywhere — no floats (§4).
+- [x] Money is **integer cents** everywhere — no floats (§4).
 
 **Gate:** a scripted scenario (create player+parent+event+snack, then delete
 each) leaves **no dangling references** and never throws. Deleting an opponent
 leaves the game intact with `opponentId: null`.
+
+_Verified locally (headless Chromium) with the exact scenario: created a
+linked player/parent/playerParent/opponent/event/snackAssignment, set
+`myPlayerId`, then ran the deletes. `deleteParent` dropped the `playerParents`
+row and the snack assignment while the player survived; `deleteOpponent` left
+the event intact with `opponentId: null`; `deletePlayer` cleared
+`settings.myPlayerId` to `null`. Also spot-checked `deleteFundraiser`
+cascading its occurrence and `deletePlatform` nullifying
+`fundraiser.platformId`. Money fields (`outstandingBalanceCents`,
+`goalAmountCents`, `raisedAmountCents`) held integers throughout. No thrown
+errors._
 
 ---
 
