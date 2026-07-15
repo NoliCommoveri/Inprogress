@@ -58,6 +58,7 @@ export function isFirstRun() {
 export function saveData() {
   _cache.meta.lastModifiedAt = new Date().toISOString();
   localStorage.setItem(STORAGE_KEY, JSON.stringify(_cache));
+  _subs.forEach(fn => fn());
 }
 
 export function subscribe(fn) { _subs.add(fn); return () => _subs.delete(fn); }
