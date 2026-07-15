@@ -41,6 +41,40 @@ export function mount(container) {
       <button id="export-pdf-btn">Download PDF</button>
       <p id="export-empty-msg" class="warning" hidden>No events in range.</p>
     </section>
+
+    <section class="help-section">
+      <h3>Keeping your data safe (read me)</h3>
+      <details>
+        <summary>Where your data lives &amp; how to not lose it</summary>
+        <p>All your team's info is stored <strong>only in this browser, on this
+           device</strong>. There is no cloud copy. That means:</p>
+        <ul>
+          <li><strong>Back up often.</strong> Use "Export Backup" above and keep
+              the file somewhere safe (see the private-info warning there).</li>
+          <li><strong>Clearing browsing data / history wipes it.</strong> If you
+              clear cookies and site data for this site, your team data goes with
+              it. Export a backup first.</li>
+          <li><strong>Private / Incognito windows don't save anything.</strong>
+              Always use a normal window for real data.</li>
+          <li><strong>iPhone / Safari auto-deletes after ~7 days unused.</strong>
+              If you don't open the site for about a week, Safari can erase its
+              data. Open it weekly — or better, <em>add it to your Home Screen</em>
+              (Share → Add to Home Screen), which makes the data much more
+              durable.</li>
+          <li><strong>iPhone: the Home Screen app and the Safari tab are separate.</strong>
+              They keep <em>separate</em> copies of the data. Pick one and always
+              use that one. If you added it to your Home Screen, stop using the
+              Safari tab (and vice-versa), or you'll be editing two different
+              copies.</li>
+          <li><strong>Moving to a new web address loses the data.</strong> If the
+              site's URL ever changes (a custom domain, a different repo), it
+              starts empty. Export a backup on the old address and import it on
+              the new one — that's the only bridge.</li>
+        </ul>
+        <p>The short version: <strong>export a backup regularly</strong>, and on
+           iPhone, install it to your Home Screen and stick to that one copy.</p>
+      </details>
+    </section>
   `;
 
   const teamInput = container.querySelector('#team-name');
@@ -91,8 +125,12 @@ export function mount(container) {
       'Importing will REPLACE all current data with the contents of this backup file. This cannot be undone. Continue?'
     );
     if (ok) {
-      await importBackup(file);
-      alert('Backup imported.');
+      try {
+        await importBackup(file);
+        alert('Backup imported.');
+      } catch (err) {
+        alert('Import failed. ' + err.message);   // store left untouched
+      }
     }
     importInput.value = '';
   });

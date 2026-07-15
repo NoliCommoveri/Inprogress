@@ -31,7 +31,7 @@ h1, h2, h3 { line-height: 1.2; }
 header {
   background: var(--color-primary);
   color: #fff;
-  padding: 12px 20px;
+  padding: calc(env(safe-area-inset-top) + 12px) 20px 12px;
 }
 
 header h1 {
@@ -75,11 +75,11 @@ header h1 {
 #outlet {
   max-width: 1000px;
   margin: 0 auto;
-  padding: 20px;
+  padding: 20px 20px calc(env(safe-area-inset-bottom) + 20px);
 }
 
 @media (max-width: 480px) {
-  #outlet { padding: 8px; }
+  #outlet { padding: 8px 8px calc(env(safe-area-inset-bottom) + 8px); }
 }
 
 section, .fundraiser-card {

@@ -358,40 +358,82 @@ gate belongs to Stage 9.3, not here.
 The detailed, authoritative instructions for this stage are
 `FootballManager_ClaudeCode_Stage9.md` (sub-stages 9.1–9.7) — it supersedes
 the shorter list below, which predates Stage 8.5 and the PWA work and was
-never reconciled with the fuller doc. Checklist mirrored here for tracking;
-**none of this is implemented yet** as of this docs-review pass:
+never reconciled with the fuller doc.
 
-- [ ] **9.1 — Minimal functional CSS pass**: iOS safe-area/notch padding
+- [x] **9.1 — Minimal functional CSS pass**: iOS safe-area/notch padding
       (`env(safe-area-inset-*)` + `viewport-fit=cover`); confirm the
       "disabled" Email-All link (`.btn-link.disabled`) is genuinely
       unclickable. (`css/styles.css` itself is already built out — this is
       a small patch, not a rewrite.)
-- [ ] **9.2 — Harden `importBackup`**: validate shape/`schemaVersion` before
+- [x] **9.2 — Harden `importBackup`**: validate shape/`schemaVersion` before
       touching the live store; a bad file must leave existing data untouched
       and show a clear error (Architecture §7).
-- [ ] **9.3 — Make the PWA actually work offline**: precache the app's own
+- [x] **9.3 — Make the PWA actually work offline**: precache the app's own
       JS modules (not just the shell/CSS/icons/vendor libs) so airplane mode
       → relaunch loads the **working app**, not a stuck "Loading…" shell;
       bump `CACHE_NAME` (currently `stm-shell-v2` → `v3`).
-- [ ] **9.4 — In-app durability / help section**: collapsible "Keeping your
+- [x] **9.4 — In-app durability / help section**: collapsible "Keeping your
       data safe" section in Settings covering §1.1 failure modes, the iOS
       installed-app-vs-Safari-tab partition trap, and the
       install-mitigates-eviction tip. (Supersedes the durability-walkthrough
       bullet from the original version of this section — it has to live in
       the app, not a repo doc a non-developer admin will never open.)
-- [ ] **9.5 — Empty-state & error-tolerance verification** on every view.
+- [x] **9.5 — Empty-state & error-tolerance verification** on every view.
 - [ ] **9.6 — Cross-browser & insecure-context smoke test** incl. Safari/iOS
       (the ITP eviction target) and a `file://` open to check the `uuid()`
-      fallback.
-- [ ] **9.7 — Deploy checklist**: `CACHE_NAME` bump, zero third-party
+      fallback. **Not verifiable in this build environment** (no real iOS/
+      Android devices, no Firefox/Safari engines) — automated headless-Chrome
+      checks substituted where possible (see verification note below); a real
+      device pass is still owed before the live-URL dry run in 9.7.
+- [x] **9.7 — Deploy checklist**: `CACHE_NAME` bump, zero third-party
       requests, vendored versions recorded, brand color `#011325` consistent,
-      all paths relative, full live-URL dry run, deploy from `main` root.
+      all paths relative. **Live-URL dry run still pending** — needs the
+      actual GitHub Pages deploy, not just local serving.
 
 **Gate:** a full dry run — seed → data entry → backup → simulated wipe →
 import → export — completes cleanly on the live site, airplane mode →
 relaunch loads the fully working app (not just the shell), and the in-app
 durability section is present. Full gate text in
 `FootballManager_ClaudeCode_Stage9.md`.
+
+**Verification note (this session):** Served the app locally
+(`python3 -m http.server`) and drove it with headless Chromium via
+Playwright, since this build environment has no real iOS/Android hardware
+and no live Pages deploy to test against.
+- Loaded the app online, reloaded it once online (service worker now
+  controlling), then set the browser context offline and reloaded again:
+  the Schedule view rendered fully (table, Add Event form, opponent picker)
+  with zero console/page errors in all three passes — confirms 9.3's fix;
+  previously this would have stuck on "Loading…" since `js/*.js` wasn't
+  cached.
+- Imported a non-JSON file and a valid-JSON-wrong-shape file via
+  `#/settings`: both were rejected with the expected alert text and no
+  thrown errors; a subsequent valid backup (round-tripped from
+  `getData()`) imported successfully with the "Backup imported." alert —
+  confirms 9.2 leaves bad imports non-destructive while good ones still work.
+- Confirmed `.help-section` renders on `#/settings` with the Home-Screen
+  and 7-day ITP-eviction copy present — confirms 9.4.
+- Grepped the app source for `http://`/`https://` references (excluding
+  vendored libs): none found — confirms the zero-third-party-request part
+  of 9.7 at the source level (not a live Network-tab capture).
+- Spot-checked empty/orphaned-reference handling by reading each view's
+  source (9.5): all six original CRUD views plus Communications already
+  have empty-state copy, and `snacks.js`/`export.js` already render
+  `(deleted parent)`/`(unknown)` for orphaned links — no code changes were
+  needed here, consistent with the doc's expectation that this stage mostly
+  verifies Stage 5/8.5 work rather than rebuilding it.
+- **Deviation from the Stage 9 doc's literal 9.1 patch:** the doc only
+  names the base `header`/`#outlet` rules, but `css/styles.css` already had
+  a `@media (max-width: 480px) { #outlet { padding: 8px; } }` override that
+  would have silently discarded the `env(safe-area-inset-bottom)` addition
+  on any viewport under 480px — i.e. on the real iPhones this fix targets.
+  Patched that override to keep the safe-area term (`padding: 8px 8px
+  calc(env(safe-area-inset-bottom) + 8px)`) instead of applying the doc's
+  text as a no-op fix.
+- Not done: real iOS/Android hardware pass (9.6), and the live Pages
+  dry run + DevTools Network-tab capture (9.7's last two bullets) — both
+  need an actual deploy and real devices, neither available in this
+  session.
 
 ---
 
