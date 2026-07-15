@@ -11,8 +11,7 @@ export function mount(container) {
     <h2>Schedule</h2>
     <div class="table-scroll">
       <table class="schedule-table">
-        <thead><tr><th>Date</th><th>Time</th><th>Type</th><th>Opponent</th>
-          <th>Location</th><th>Status</th><th>Score</th><th></th></tr></thead>
+        <thead><tr><th>Date</th><th>Time</th><th>Type</th><th></th></tr></thead>
         <tbody id="schedule-body"></tbody>
       </table>
     </div>
@@ -44,6 +43,7 @@ export function mount(container) {
   const tbody = container.querySelector('#schedule-body');
   const form = container.querySelector('#add-event-form');
   const oppSelect = container.querySelector('#opponent-select');
+  const expandedIds = new Set();
 
   function renderOpponentOptions(select, selectedId = '') {
     const opts = getOpponents().map(o =>
@@ -59,46 +59,60 @@ export function mount(container) {
     tbody.innerHTML = events.map(e => {
       const opp = e.opponentId ? getOpponentById(e.opponentId) : null;
       const isGame = e.type === 'game';
+      const isExpanded = expandedIds.has(e.id);
       return `
         <tr data-id="${e.id}">
           <td><input type="date" class="f-date" value="${e.date}" /></td>
-          <td>
-            <input type="time" class="f-start" value="${e.startTime}" />
-            <input type="time" class="f-end" value="${e.endTime || ''}" />
-          </td>
+          <td><input type="time" class="f-start" value="${e.startTime}" /></td>
           <td>
             <select class="f-type">
               <option value="practice" ${!isGame ? 'selected' : ''}>Practice</option>
               <option value="game" ${isGame ? 'selected' : ''}>Game</option>
             </select>
           </td>
-          <td>${isGame ? `<select class="f-opponent">
-              <option value="">— No opponent —</option>${
-                getOpponents().map(o => `<option value="${o.id}" ${o.id === e.opponentId ? 'selected' : ''}>${escapeHtml(o.name)}</option>`).join('')
-              }</select>` : ''}</td>
-          <td><input class="f-location" value="${escapeHtml(e.location)}"
-                placeholder="${opp ? escapeHtml(opp.homeLocation || '') : ''}" /></td>
-          <td>
-            <select class="f-status">
-              <option value="scheduled" ${e.status === 'scheduled' ? 'selected' : ''}>Scheduled</option>
-              <option value="canceled" ${e.status === 'canceled' ? 'selected' : ''}>Canceled</option>
-              <option value="completed" ${e.status === 'completed' ? 'selected' : ''}>Completed</option>
-            </select>
+          <td><button class="expand-toggle" aria-expanded="${isExpanded}" title="More fields">${isExpanded ? '▾' : '▸'}</button></td>
+        </tr>
+        <tr class="expand-row" data-id="${e.id}" ${isExpanded ? '' : 'hidden'}>
+          <td colspan="4">
+            <div class="expand-grid">
+              <div class="field-row"><label>End time</label>
+                <input type="time" class="f-end" value="${e.endTime || ''}" /></div>
+              ${isGame ? `<div class="field-row"><label>Opponent</label>
+                <select class="f-opponent">
+                  <option value="">— No opponent —</option>${
+                    getOpponents().map(o => `<option value="${o.id}" ${o.id === e.opponentId ? 'selected' : ''}>${escapeHtml(o.name)}</option>`).join('')
+                  }</select></div>` : ''}
+              <div class="field-row"><label>Location</label>
+                <input class="f-location" value="${escapeHtml(e.location)}"
+                  placeholder="${opp ? escapeHtml(opp.homeLocation || '') : ''}" /></div>
+              <div class="field-row"><label>Status</label>
+                <select class="f-status">
+                  <option value="scheduled" ${e.status === 'scheduled' ? 'selected' : ''}>Scheduled</option>
+                  <option value="canceled" ${e.status === 'canceled' ? 'selected' : ''}>Canceled</option>
+                  <option value="completed" ${e.status === 'completed' ? 'selected' : ''}>Completed</option>
+                </select></div>
+              ${isGame && e.status === 'completed' ? `
+                <div class="field-row"><label>Score</label>
+                  <input type="number" class="f-score-us" value="${e.finalScoreUs ?? ''}" /> -
+                  <input type="number" class="f-score-opp" value="${e.finalScoreOpponent ?? ''}" /></div>
+              ` : ''}
+              <div class="field-row"><button class="delete-btn">Delete</button></div>
+            </div>
           </td>
-          <td>${isGame && e.status === 'completed' ? `
-            <input type="number" class="f-score-us" value="${e.finalScoreUs ?? ''}" size="2" /> -
-            <input type="number" class="f-score-opp" value="${e.finalScoreOpponent ?? ''}" size="2" />
-          ` : ''}</td>
-          <td><button class="delete-btn">Delete</button></td>
         </tr>`;
-    }).join('') || '<tr><td colspan="8">No events yet.</td></tr>';
+    }).join('') || '<tr><td colspan="4">No events yet.</td></tr>';
   }
 
   tbody.addEventListener('click', (e) => {
     const row = e.target.closest('tr');
     if (!row) return;
+    const id = row.dataset.id;
     if (e.target.classList.contains('delete-btn')) {
-      if (confirm('Delete this event? Removes its snack assignments too.')) deleteEvent(row.dataset.id);
+      if (confirm('Delete this event? Removes its snack assignments too.')) deleteEvent(id);
+    }
+    if (e.target.classList.contains('expand-toggle')) {
+      if (expandedIds.has(id)) expandedIds.delete(id); else expandedIds.add(id);
+      render();
     }
   });
 
