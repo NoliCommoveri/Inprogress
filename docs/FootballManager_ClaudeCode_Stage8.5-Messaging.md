@@ -115,10 +115,13 @@ export function getAllParentEmails() {
 // multi-recipient support — do not encodeURIComponent the address list,
 // only the subject/body. Encoding the comma breaks multi-recipient parsing
 // in most clients.
+// NOTE: use encodeURIComponent, not URLSearchParams, for subject/body —
+// URLSearchParams encodes spaces as "+" (application/x-www-form-urlencoded),
+// but mailto: URIs use plain percent-encoding (RFC 6068), where "+" is a
+// literal character. Mail clients render it literally instead of a space.
 export function mailtoLink(emails, subject, body) {
   const to = Array.isArray(emails) ? emails.join(',') : emails;
-  const params = new URLSearchParams({ subject, body });
-  return `mailto:${to}?${params.toString()}`;
+  return `mailto:${to}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
 }
 
 // iOS wants `&` before body, Android/most others want `?` — this covers both.
