@@ -58,9 +58,14 @@ Mitigations (see §7):
   Download each library once, commit the single file into `/js/vendor/`, and
   load it with a local `<script>`. No third-party origin ever executes in the
   page, so nothing external can read localStorage.
-  - `js/vendor/xlsx.full.min.js` — SheetJS community build (exposes `XLSX`).
-  - `js/vendor/jspdf.umd.min.js` — jsPDF (exposes `jspdf.jsPDF`).
-  - Pin the versions; record them in this file when you vendor them.
+  - `js/vendor/xlsx.full.min.js` — SheetJS Community Edition v0.18.5, vendored
+    2026-07-15 (via the `xlsx` npm tarball's `dist/` build — SheetJS's own
+    `cdn.sheetjs.com`, which hosts newer 0.20.x builds, was unreachable from
+    the build environment's network policy; 0.18.5 is the latest version
+    SheetJS still publishes to the npm registry and is the same official
+    `dist/xlsx.full.min.js` artifact, just an older pin).
+  - `js/vendor/jspdf.umd.min.js` — jsPDF v4.2.1, vendored 2026-07-15 (via the
+    `jspdf` npm tarball, current stable at vendor time).
 - **No other third-party scripts** (no analytics, no CDN fonts/CSS that execute
   JS). This is a hard rule while PII lives in localStorage.
 

@@ -227,36 +227,70 @@ own metadata was already stale the moment it was written._
 
 ## Stage 7 — Vendored export libs
 
-- [ ] Download **SheetJS** community build → `js/vendor/xlsx.full.min.js`
+- [x] Download **SheetJS** community build → `js/vendor/xlsx.full.min.js`
       (exposes `XLSX`). **Pin the version; record it in the architecture doc.**
-- [ ] Download **jsPDF** UMD → `js/vendor/jspdf.umd.min.js`
+- [x] Download **jsPDF** UMD → `js/vendor/jspdf.umd.min.js`
       (exposes `jspdf.jsPDF`). **Pin + record the version.**
-- [ ] Load both via local `<script>` — **no CDN** (hard rule while PII lives in
+- [x] Load both via local `<script>` — **no CDN** (hard rule while PII lives in
       localStorage, §2).
 
 **Gate:** `window.XLSX` and `window.jspdf` are defined; nothing external loads
 in the Network tab.
 
+_Verified locally (`python3 -m http.server` + headless Chromium via
+Playwright): `window.XLSX` and `window.jspdf.jsPDF` are both defined on load
+with zero import statements, and the Network tab shows zero third-party
+requests — only `http://localhost:*` traffic. Both vendor files download via
+the npm registry tarballs (`cdn.sheetjs.com`/`unpkg.com` were unreachable
+under this build environment's network policy) and are confirmed non-empty,
+minified JS. Pinned: SheetJS Community Edition v0.18.5 (npm's latest
+published build — see the architecture doc §2 note on why not 0.20.x) and
+jsPDF v4.2.1, both recorded in `FootballManager_Architecture.md` §2 with the
+vendor date._
+
 ---
 
 ## Stage 8 — Date-range export (`export.js`)
 
-- [ ] `getEventsInRange(start, end)` — inclusive, sorted by date+time (§8.1).
-- [ ] `resolveEvent()` — resolve FKs to names, **tolerate missing refs**
+- [x] `getEventsInRange(start, end)` — inclusive, sorted by date+time (§8.1).
+- [x] `resolveEvent()` — resolve FKs to names, **tolerate missing refs**
       (`(deleted parent)`, `(unknown)`), format score, cents→string.
-- [ ] `exportRangeToXlsx()` — one row per event; column widths; optional
+- [x] `exportRangeToXlsx()` — one row per event; column widths; optional
       **Fundraisers sheet** for occurrences overlapping the range (§8.2).
-- [ ] `exportRangeToPdf()` — one info block per event; bold header + labeled
+- [x] `exportRangeToPdf()` — one info block per event; bold header + labeled
       lines; **pagination** when a block would overflow (§8.3).
-- [ ] Confirm `outstandingBalanceCents` is **excluded** from this export by
+- [x] Confirm `outstandingBalanceCents` is **excluded** from this export by
       design (§8 note).
-- [ ] Export UI (Settings or Schedule panel): two date inputs (default
+- [x] Export UI (Settings or Schedule panel): two date inputs (default
       today → +30d), **Download Excel** / **Download PDF**; disable + show
       "No events in range" when empty (§8.4).
 
 **Gate:** a populated range produces a correct `.xlsx` and a paginated `.pdf`;
 an empty range disables the buttons; a deleted opponent/parent shows the
 tolerant placeholder instead of crashing.
+
+_Verified locally (`python3 -m http.server` + headless Chromium via
+Playwright): seeded a player/parent/opponent/game with a snack assignment,
+exported `.xlsx` and `.pdf` — the workbook's `Events` sheet had the correct
+row (opponent name, `3–1` score, snack parent + phone), and the PDF's text
+stream had the matching info block with no third-party network calls.
+Inspected the raw `.xlsx` (unzipped) and `.pdf` (raw content stream, since
+this build's PDFs aren't Flate-compressed) to confirm actual output rather
+than just trusting no-throw. Deleted the parent and opponent afterward and
+re-exported: `deleteParent`/`deleteOpponent`'s existing cascade/nullify
+helpers already remove the dangling snack assignment and null the
+`opponentId`, so the export showed `(unknown)` for the opponent and no
+snack row — confirmed no exception either way. Seeded 40 events with long
+notes across a 6-week range and exported to PDF: produced 5 pages with no
+block split across a page boundary (verified via the page-break check
+before each event's header). Toggling the date range to a window with zero
+events disabled both buttons and un-hid "No events in range"; widening the
+range back re-enabled them immediately. Grepped both export outputs for
+`outstandingBalanceCents`/balance figures — absent from either format. Also
+fixed two small CSS gaps surfaced by this UI: `.warning` styling was scoped
+to `.backup-section` only (the new `.export-section .warning` wouldn't have
+picked it up) and there was no `button:disabled` style, so the empty-range
+state wasn't visibly distinct — both fixed in `css/styles.css`._
 
 ---
 
