@@ -1,4 +1,16 @@
-// nudge.js — app-wide backup nudge banner. Full logic lands in Stage 6.
+// nudge.js — app-wide backup nudge banner.
+import { backupNudgeDue, subscribe } from './data.js';
+
 export function initNudgeBanner(bannerEl) {
-  // no-op until Stage 6 wires up backupNudgeDue()
+  function render() {
+    if (backupNudgeDue()) {
+      bannerEl.hidden = false;
+      bannerEl.innerHTML = `⚠️ You have unsaved changes since your last backup. ` +
+        `Go to <a href="#/settings">Settings</a> to export a backup.`;
+    } else {
+      bannerEl.hidden = true;
+    }
+  }
+  subscribe(render);
+  render();
 }

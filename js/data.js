@@ -1,7 +1,7 @@
 // data.js — the only file allowed to call localStorage.
 
 const STORAGE_KEY = 'stm:v1';
-const SCHEMA_VERSION = 1;
+const SCHEMA_VERSION = 2;
 
 let _cache = null;
 const _subs = new Set(); // () => void, called after an external (cross-tab) change
@@ -20,7 +20,7 @@ export function uuid() {
 function emptyData() {
   return {
     schemaVersion: SCHEMA_VERSION,
-    meta: { lastModifiedAt: null, lastBackupAt: null },
+    meta: { lastModifiedAt: null, lastBackupAt: null, changesSinceBackup: 0 },
     settings: { teamName: '', season: '', myPlayerId: null },
     players: [], parents: [], playerParents: [], opponents: [],
     events: [], snackAssignments: [],
@@ -30,10 +30,13 @@ function emptyData() {
 
 // ---------- Migration ----------
 function migrate(data) {
-  // Pass-through at schemaVersion 1. When a future change requires a
-  // migration: branch on data.schemaVersion, mutate `data` in place, bump
-  // data.schemaVersion, return it. Every load path (loadData, the storage
-  // listener, and the future importBackup) must route through this.
+  if (data.schemaVersion < 2) {
+    data.meta.changesSinceBackup = data.meta.changesSinceBackup ?? 0;
+    data.schemaVersion = 2;
+  }
+  // Pass-through at schemaVersion 2. Next migration branches here. Every
+  // load path (loadData, the storage listener, importBackup) routes
+  // through this.
   return data;
 }
 
@@ -55,8 +58,11 @@ export function isFirstRun() {
   return localStorage.getItem(STORAGE_KEY) === null;
 }
 
-export function saveData() {
+export function saveData({ countAsChange = true } = {}) {
   _cache.meta.lastModifiedAt = new Date().toISOString();
+  if (countAsChange) {
+    _cache.meta.changesSinceBackup = (_cache.meta.changesSinceBackup || 0) + 1;
+  }
   localStorage.setItem(STORAGE_KEY, JSON.stringify(_cache));
   _subs.forEach(fn => fn());
 }
@@ -255,4 +261,35 @@ export function deletePlatform(platformId) {
   d.fundraisers.forEach(f => { if (f.platformId === platformId) { f.platformId = null; touch(f); } });
   d.fundraiserPlatforms = d.fundraiserPlatforms.filter(p => p.id !== platformId);
   saveData();
+}
+
+// ---------- Backup / restore / nudge ----------
+export function exportBackup() {
+  const d = getData();
+  d.meta.lastBackupAt = new Date().toISOString();
+  d.meta.changesSinceBackup = 0;
+  saveData({ countAsChange: false });
+
+  const blob = new Blob([JSON.stringify(d, null, 2)], { type: 'application/json' });
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = `stm-backup-${new Date().toISOString().slice(0, 10)}.json`;
+  a.click();
+  URL.revokeObjectURL(a.href);
+}
+
+export async function importBackup(file) {
+  const parsed = migrate(JSON.parse(await file.text()));
+  _cache = parsed;
+  saveData({ countAsChange: false });
+}
+
+export function backupNudgeDue() {
+  const { meta } = getData();
+  if (!meta.lastModifiedAt) return false;
+  if (!meta.lastBackupAt) return true;
+  const modifiedSinceBackup = Date.parse(meta.lastModifiedAt) > Date.parse(meta.lastBackupAt);
+  const ageDays = (Date.parse(meta.lastModifiedAt) - Date.parse(meta.lastBackupAt)) / 864e5;
+  const changeCount = meta.changesSinceBackup || 0;
+  return modifiedSinceBackup && (ageDays > 3 || changeCount > 25);
 }
