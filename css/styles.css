@@ -78,6 +78,10 @@ header h1 {
   padding: 20px;
 }
 
+@media (max-width: 480px) {
+  #outlet { padding: 8px; }
+}
+
 section, .fundraiser-card {
   background: var(--color-surface);
   border: 1px solid var(--color-border);
@@ -87,6 +91,12 @@ section, .fundraiser-card {
 }
 
 /* Tables */
+.table-scroll {
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  margin-bottom: var(--gap);
+}
+
 table {
   width: 100%;
   border-collapse: collapse;
@@ -96,6 +106,8 @@ table {
   overflow: hidden;
   margin-bottom: var(--gap);
 }
+
+.table-scroll table { margin-bottom: 0; }
 
 th, td {
   padding: 8px 10px;
@@ -168,7 +180,6 @@ button:hover { background: var(--color-primary-dark); }
   border: none;
   color: var(--color-accent);
   font-size: 1.1rem;
-  padding: 0 4px;
 }
 
 .star-btn:hover { background: none; color: var(--color-accent); opacity: 0.7; }
@@ -261,4 +272,77 @@ dialog form input, dialog form select {
 
 .modal-actions .cancel-btn:hover {
   background: #eef1f4;
+}
+
+/* Compact roster/parents columns + expandable rows */
+.roster-table th, .roster-table td,
+.parents-table th, .parents-table td {
+  padding: 6px 2px;
+}
+
+.roster-table th:first-child, .roster-table td:first-child,
+.parents-table th:first-child, .parents-table td:first-child {
+  padding-left: 4px;
+}
+
+.roster-table .f-jersey {
+  width: 3ch;
+  padding: 4px 2px 4px 4px;
+  text-align: center;
+}
+
+.roster-table .f-first,
+.roster-table .f-last {
+  width: 11ch;
+  padding: 4px;
+}
+
+.star-btn, .expand-toggle {
+  padding: 0 2px;
+}
+
+.expand-toggle {
+  background: none;
+  border: none;
+  color: var(--color-text-muted);
+  font-size: 0.9rem;
+}
+
+.expand-toggle:hover { background: none; opacity: 0.7; }
+
+.expand-row td {
+  background: #fafbfc;
+  padding: 8px 10px;
+}
+
+.expand-grid {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.expand-grid .field-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 30px;
+}
+
+.expand-grid .field-row label {
+  flex: 0 0 70px;
+  font-size: 0.8rem;
+  color: var(--color-text-muted);
+}
+
+.expand-grid .field-row input,
+.expand-grid .field-row select {
+  flex: 1;
+  min-width: 0;
+}
+
+.linked-child {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  flex-wrap: wrap;
 }

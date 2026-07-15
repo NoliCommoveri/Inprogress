@@ -10,10 +10,12 @@ import { escapeHtml } from '../util.js';
 export function mount(container) {
   container.innerHTML = `
     <h2>Snack Schedule</h2>
-    <table class="snacks-table">
-      <thead><tr><th>Date</th><th>Time</th><th>Location</th><th>Snack Parent(s)</th><th>Assign</th></tr></thead>
-      <tbody id="snacks-body"></tbody>
-    </table>
+    <div class="table-scroll">
+      <table class="snacks-table">
+        <thead><tr><th>Date</th><th>Time</th><th>Location</th><th>Snack Parent(s)</th><th>Assign</th></tr></thead>
+        <tbody id="snacks-body"></tbody>
+      </table>
+    </div>
   `;
   const tbody = container.querySelector('#snacks-body');
 

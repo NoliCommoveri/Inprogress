@@ -9,10 +9,12 @@ import { escapeHtml } from '../util.js';
 export function mount(container) {
   container.innerHTML = `
     <h2>Parents</h2>
-    <table class="parents-table">
-      <thead><tr><th>Name</th><th>Phone</th><th>Email</th><th>Players</th><th></th></tr></thead>
-      <tbody id="parents-body"></tbody>
-    </table>
+    <div class="table-scroll">
+      <table class="parents-table">
+        <thead><tr><th>Name</th><th>Linked Child</th><th></th></tr></thead>
+        <tbody id="parents-body"></tbody>
+      </table>
+    </div>
     <h3>Add Parent</h3>
     <form id="add-parent-form">
       <input name="name" placeholder="Name" required />
@@ -24,6 +26,7 @@ export function mount(container) {
 
   const tbody = container.querySelector('#parents-body');
   const form = container.querySelector('#add-parent-form');
+  const expandedIds = new Set();
 
   function render() {
     const parents = getParents();
@@ -33,25 +36,33 @@ export function mount(container) {
       const linkedNames = links.map(l => {
         const pl = players.find(x => x.id === l.playerId);
         return pl
-          ? `${escapeHtml(pl.firstName)} ${escapeHtml(pl.lastName)}
-             <button class="unlink-btn" data-link="${l.id}">×</button>`
+          ? `<span class="linked-child">${escapeHtml(pl.firstName)} ${escapeHtml(pl.lastName)}
+             <button class="unlink-btn" data-link="${l.id}">×</button></span>`
           : '';
-      }).join(', ');
+      }).join(' ');
       const linkedIds = new Set(links.map(l => l.playerId));
       const options = players.filter(pl => !linkedIds.has(pl.id))
         .map(pl => `<option value="${pl.id}">${escapeHtml(pl.firstName)} ${escapeHtml(pl.lastName)}</option>`)
         .join('');
+      const isExpanded = expandedIds.has(p.id);
       return `
         <tr data-id="${p.id}">
           <td><input class="f-name" value="${escapeHtml(p.name)}" /></td>
-          <td><input class="f-phone" value="${escapeHtml(p.phone)}" /></td>
-          <td><input class="f-email" value="${escapeHtml(p.email)}" /></td>
-          <td>${linkedNames}
-            ${options ? `<select class="link-select"><option value="">+ link player…</option>${options}</select>` : ''}
+          <td>${linkedNames}</td>
+          <td><button class="expand-toggle" aria-expanded="${isExpanded}" title="More fields">${isExpanded ? '▾' : '▸'}</button></td>
+        </tr>
+        <tr class="expand-row" data-id="${p.id}" ${isExpanded ? '' : 'hidden'}>
+          <td colspan="3">
+            <div class="expand-grid">
+              <div class="field-row"><label>Phone</label><input class="f-phone" value="${escapeHtml(p.phone)}" /></div>
+              <div class="field-row"><label>Email</label><input class="f-email" value="${escapeHtml(p.email)}" /></div>
+              ${options ? `<div class="field-row"><label>Link child</label>
+                <select class="link-select"><option value="">+ link player…</option>${options}</select></div>` : ''}
+              <div class="field-row"><button class="delete-btn">Delete</button></div>
+            </div>
           </td>
-          <td><button class="delete-btn">Delete</button></td>
         </tr>`;
-    }).join('') || '<tr><td colspan="5">No parents yet.</td></tr>';
+    }).join('') || '<tr><td colspan="3">No parents yet.</td></tr>';
   }
 
   tbody.addEventListener('click', (e) => {
@@ -63,6 +74,10 @@ export function mount(container) {
     }
     if (e.target.classList.contains('unlink-btn')) {
       deletePlayerParent(e.target.dataset.link);
+    }
+    if (e.target.classList.contains('expand-toggle')) {
+      if (expandedIds.has(id)) expandedIds.delete(id); else expandedIds.add(id);
+      render();
     }
   });
 

@@ -9,11 +9,13 @@ import { escapeHtml } from '../util.js';
 export function mount(container) {
   container.innerHTML = `
     <h2>Schedule</h2>
-    <table class="schedule-table">
-      <thead><tr><th>Date</th><th>Time</th><th>Type</th><th>Opponent</th>
-        <th>Location</th><th>Status</th><th>Score</th><th></th></tr></thead>
-      <tbody id="schedule-body"></tbody>
-    </table>
+    <div class="table-scroll">
+      <table class="schedule-table">
+        <thead><tr><th>Date</th><th>Time</th><th>Type</th><th>Opponent</th>
+          <th>Location</th><th>Status</th><th>Score</th><th></th></tr></thead>
+        <tbody id="schedule-body"></tbody>
+      </table>
+    </div>
     <h3>Add Event</h3>
     <form id="add-event-form">
       <select name="type"><option value="practice">Practice</option><option value="game">Game</option></select>

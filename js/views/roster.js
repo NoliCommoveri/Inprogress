@@ -13,13 +13,14 @@ export function mount(container) {
     <datalist id="position-list">
       ${COMMON_POSITIONS.map(p => `<option value="${p}"></option>`).join('')}
     </datalist>
-    <table class="roster-table">
-      <thead>
-        <tr><th></th><th>#</th><th>First</th><th>Last</th><th>Position</th>
-            <th>Active</th><th>Balance</th><th></th></tr>
-      </thead>
-      <tbody id="roster-body"></tbody>
-    </table>
+    <div class="table-scroll">
+      <table class="roster-table">
+        <thead>
+          <tr><th></th><th>#</th><th>First</th><th>Last</th><th></th></tr>
+        </thead>
+        <tbody id="roster-body"></tbody>
+      </table>
+    </div>
     <h3>Add Player</h3>
     <form id="add-player-form">
       <input name="jerseyNumber" placeholder="#" size="3" />
@@ -32,23 +33,36 @@ export function mount(container) {
 
   const tbody = container.querySelector('#roster-body');
   const form = container.querySelector('#add-player-form');
+  const expandedIds = new Set();
 
   function render() {
     const players = getPlayers();
     const myId = getSettings().myPlayerId;
-    tbody.innerHTML = players.map(p => `
+    tbody.innerHTML = players.map(p => {
+      const isExpanded = expandedIds.has(p.id);
+      return `
       <tr data-id="${p.id}" class="${p.id === myId ? 'my-player' : ''} ${!p.active ? 'inactive' : ''}">
         <td><button class="star-btn" title="Mark as my player">${p.id === myId ? '★' : '☆'}</button></td>
-        <td><input class="f-jersey" value="${escapeHtml(p.jerseyNumber)}" size="3" /></td>
+        <td><input class="f-jersey" value="${escapeHtml(p.jerseyNumber)}" /></td>
         <td><input class="f-first" value="${escapeHtml(p.firstName)}" /></td>
         <td><input class="f-last" value="${escapeHtml(p.lastName)}" /></td>
-        <td><input class="f-position" value="${escapeHtml(p.position)}" list="position-list" /></td>
-        <td><input type="checkbox" class="f-active" ${p.active ? 'checked' : ''} /></td>
-        <td>$<input class="f-balance" type="number" step="0.01"
-              value="${(p.outstandingBalanceCents / 100).toFixed(2)}" size="6" /></td>
-        <td><button class="delete-btn">Delete</button></td>
+        <td><button class="expand-toggle" aria-expanded="${isExpanded}" title="More fields">${isExpanded ? '▾' : '▸'}</button></td>
       </tr>
-    `).join('') || '<tr><td colspan="8">No players yet.</td></tr>';
+      <tr class="expand-row" data-id="${p.id}" ${isExpanded ? '' : 'hidden'}>
+        <td colspan="5">
+          <div class="expand-grid">
+            <div class="field-row"><label>Position</label>
+              <input class="f-position" value="${escapeHtml(p.position)}" list="position-list" /></div>
+            <div class="field-row"><label>Active</label>
+              <input type="checkbox" class="f-active" ${p.active ? 'checked' : ''} /></div>
+            <div class="field-row"><label>Balance</label>
+              <span>$</span><input class="f-balance" type="number" step="0.01"
+                value="${(p.outstandingBalanceCents / 100).toFixed(2)}" /></div>
+            <div class="field-row"><button class="delete-btn">Delete</button></div>
+          </div>
+        </td>
+      </tr>`;
+    }).join('') || '<tr><td colspan="5">No players yet.</td></tr>';
   }
 
   tbody.addEventListener('click', (e) => {
@@ -61,6 +75,10 @@ export function mount(container) {
     }
     if (e.target.classList.contains('delete-btn')) {
       if (confirm('Delete this player? This cannot be undone.')) deletePlayer(id);
+    }
+    if (e.target.classList.contains('expand-toggle')) {
+      if (expandedIds.has(id)) expandedIds.delete(id); else expandedIds.add(id);
+      render();
     }
   });
 
