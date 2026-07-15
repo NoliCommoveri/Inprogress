@@ -3,6 +3,7 @@ const routes = {
   '#/schedule':    () => import('./views/schedule.js'),
   '#/roster':      () => import('./views/roster.js'),
   '#/parents':     () => import('./views/parents.js'),
+  '#/communications': () => import('./views/communications.js'),
   '#/snacks':      () => import('./views/snacks.js'),
   '#/fundraisers': () => import('./views/fundraisers.js'),
   '#/settings':    () => import('./views/settings.js'),
