@@ -53,19 +53,32 @@ failure modes appeared:
   fixes this for real.
 - `importBackup` **never validated its input** (Architecture §7 asked it
   to). One bad file can corrupt the in-memory store. 9.2 hardens it.
-- There has been **no CSS** — views reference classes (`.my-player`,
-  `.progress-fill`, `.nudge`, `.disabled`, …) that don't exist, and the iOS
-  `black-translucent` status bar slides content under the notch. 9.1 does a
-  minimal functional pass.
+- **Revision note (this doc was drafted the same evening the final PWA icon
+  set landed, and missed the sync):** an earlier draft of this section
+  assumed `css/styles.css` was still empty/near-empty and that the brand
+  color was `#123524`. Neither is true anymore — `css/styles.css` was built
+  out for real across the Stage 8 CSS-gap fix and the
+  `FootballManager_UXReview_2026-07-15.md` mobile-layout session (460+
+  lines: tables, expand rows, dialogs, the `.btn-link`/`.btn-link.disabled`
+  pattern, etc.), and the icon-set replacement commit that landed right
+  after this doc settled the real brand color at **`#011325`** (see
+  `manifest.webmanifest`'s `theme_color`/`background_color` and
+  `index.html`'s `theme-color` meta — already consistent with each other,
+  just not with the `#123524` this doc originally referenced). 9.1 below is
+  corrected to a **delta patch** against the real file, not a full
+  replacement — applying the old full-replacement block would have silently
+  deleted that work. The iOS `black-translucent`-under-the-notch gap is
+  still real and unfixed; that part of 9.1 stands.
 
 ---
 
 ## Stage 9.1 — Minimal functional CSS pass
 
-Scope: make the class hooks the views already emit *do something*, make the
-app legible on a phone, and fix the iOS safe-area bug. This is **functional,
-not a design exercise** — distinctive visual polish is explicitly deferred
-(see the deferral list). Keep it small.
+Scope: fix the iOS safe-area/notch bug and confirm the "disabled" link
+pattern is real. **`css/styles.css` is already built out (460+ lines,
+tables/dialogs/expand-rows/the `.btn-link` pattern all present) — this is a
+small ADD, not a replacement.** Read the current file before touching it;
+nothing below should remove existing rules.
 
 ### `index.html` — CHANGE the viewport tag
 
@@ -78,120 +91,43 @@ a no-op without this:
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
 ```
 
-### `css/styles.css` — replace the empty/near-empty file
+### `css/styles.css` — ADD safe-area padding to the existing `header` and `#outlet` rules
+
+Nothing below is a new selector — both `header` and `#outlet` already exist
+in the file (see the current `header { background: var(--color-primary); ...`
+and `#outlet { max-width: 1000px; ... }` blocks). Add the `env()` padding
+into those existing rules rather than introducing new ones or a new `--brand`
+variable (the file already has `--color-primary: #1f6f43` for the header
+background and `#011325` as the app's actual PWA brand color, used in
+`manifest.webmanifest`/`index.html`'s `theme-color` — the two are
+intentionally different: `--color-primary` is the in-app UI accent,
+`#011325` is the OS-chrome/install-icon color. Don't conflate them or
+introduce a third `--brand` value):
 
 ```css
-:root {
-  --brand: #123524;
-  --danger: #a4243b;
-  --ok: #2e7d32;
-  --line: #ddd;
-  --warn-bg: #fff4e5;
-}
-
-* { box-sizing: border-box; }
-
-body {
-  margin: 0;
-  font: 15px/1.4 system-ui, -apple-system, Segoe UI, Roboto, sans-serif;
-  color: #1a1a1a;
-}
-
-/* Header carries the iOS status-bar inset (black-translucent draws under it). */
+/* header — CHANGE padding to carry the iOS status-bar inset
+   (black-translucent draws under it without this) */
 header {
-  background: var(--brand);
+  background: var(--color-primary);
   color: #fff;
-  padding: calc(env(safe-area-inset-top) + 10px) 12px 10px;
-}
-header h1 { margin: 0 0 8px; font-size: 1.15rem; }
-
-nav#main-nav { display: flex; flex-wrap: wrap; gap: 4px; }
-nav#main-nav a {
-  color: #fff; text-decoration: none;
-  padding: 6px 10px; border-radius: 6px; font-size: .95rem;
-}
-nav#main-nav a.active { background: rgba(255, 255, 255, .22); font-weight: 600; }
-
-main#outlet {
-  padding: 12px;
-  padding-bottom: calc(env(safe-area-inset-bottom) + 24px);
-  max-width: 960px; margin: 0 auto;
+  padding: calc(env(safe-area-inset-top) + 12px) 20px 12px;
 }
 
-/* App-wide backup nudge banner (Stage 6) */
-#nudge-banner {
-  background: var(--warn-bg); border-bottom: 1px solid #e0b070;
-  padding: 8px 12px; font-size: .9rem;
+/* #outlet — CHANGE to carry the iOS home-indicator inset at the bottom */
+#outlet {
+  max-width: 1000px;
+  margin: 0 auto;
+  padding: 20px 20px calc(env(safe-area-inset-bottom) + 20px);
 }
-#nudge-banner a { color: var(--brand); font-weight: 600; }
-
-/* Tables (roster / parents / schedule / snacks) */
-table { width: 100%; border-collapse: collapse; }
-th, td { padding: 6px 5px; border-bottom: 1px solid var(--line); text-align: left; vertical-align: top; }
-th { font-size: .8rem; text-transform: uppercase; letter-spacing: .03em; color: #555; }
-input, select, button { font: inherit; padding: 4px 6px; }
-input[type="date"], input[type="time"], input[type="number"] { max-width: 100%; }
-
-/* Roster row states */
-tr.my-player { background: #fffbe6; }
-tr.my-player td:first-child { box-shadow: inset 3px 0 0 #f2c200; }
-tr.inactive { opacity: .55; }
-.star-btn { border: none; background: none; cursor: pointer; font-size: 1.1rem; }
-
-/* Destructive buttons */
-.delete-btn, .delete-fundraiser-btn, .unlink-btn, .unassign-btn, .delete-occ-btn {
-  color: var(--danger); border: 1px solid currentColor; background: #fff;
-  border-radius: 5px; cursor: pointer;
-}
-.unlink-btn, .unassign-btn { padding: 0 6px; }
-
-/* Snacks unassigned flag */
-tr.unassigned-flag { background: #fdecec; }
-
-/* Fundraisers */
-.fundraiser-card {
-  border: 1px solid var(--line); border-radius: 8px;
-  padding: 12px; margin-bottom: 12px;
-}
-.progress-bar {
-  height: 10px; background: #eee; border-radius: 5px; overflow: hidden; margin: 8px 0;
-}
-.progress-fill { height: 100%; background: var(--ok); }
-.occurrence-list { list-style: none; padding-left: 0; margin: 8px 0; }
-.occurrence-list li { padding: 4px 0; }
-
-/* Settings sections */
-.backup-section, .export-section, .help-section {
-  border-top: 1px solid var(--line); margin-top: 16px; padding-top: 12px;
-}
-.warning { background: var(--warn-bg); padding: 8px 10px; border-radius: 6px; font-size: .9rem; }
-#last-backup-status.nudge { color: var(--danger); font-weight: 600; }
-
-/* Weekly Update (Stage 8.5) */
-.weekly-update { border-top: 1px solid var(--line); margin-top: 16px; padding-top: 12px; }
-.weekly-update pre {
-  white-space: pre-wrap; background: #f7f7f7;
-  padding: 10px; border-radius: 6px; font-size: .9rem;
-}
-
-/* Buttons / links styled as buttons */
-.btn {
-  display: inline-block; background: var(--brand); color: #fff;
-  padding: 7px 12px; border-radius: 6px; text-decoration: none; cursor: pointer;
-}
-
-/*  CRITICAL: "Email All Parents" is an <a>, not a <button>. messaging.js
-    toggles the .disabled CLASS on it — without pointer-events:none the link
-    still fires a recipient-less mailto when clicked. Same for any .btn. */
-.btn.disabled, a.disabled { opacity: .5; pointer-events: none; }
-
-/* Native disabled buttons (export buttons) */
-button:disabled { opacity: .5; cursor: not-allowed; }
 ```
 
-> The `a.disabled { pointer-events: none }` rule isn't cosmetic — it's the
-> only thing stopping the "disabled" Email-All link from opening a broken
-> `mailto:` with no recipients. Don't drop it.
+The "disabled link can't be clicked" requirement is **already satisfied** —
+`css/styles.css` has `.btn-link.disabled { opacity: 0.5; pointer-events: none; }`
+(added during the Stage 8.5 Communications build, for the same "Email All
+Parents" `<a>`-not-`<button>` reason). Verify it's still there and still
+applied to the Email-All link in `js/views/communications.js`; don't add a
+second `.btn.disabled`/`a.disabled` rule — there is no bare `.btn` class in
+this codebase, only `.btn-link`.
 
 ---
 
@@ -286,8 +222,17 @@ vendored libs, and lean on `CACHE_NAME` discipline to avoid staleness.
 
 ### `sw.js` — CHANGE `SHELL_FILES` and bump `CACHE_NAME`
 
+**Correction:** `sw.js` already ships at `CACHE_NAME = 'stm-shell-v2'` (a
+prior pass bumped it once, but only to add the vendor libs — the app JS
+below was never added). Bump to **`'stm-shell-v3'`**, not `'v2'` — reusing
+`v2` won't force already-installed clients to refetch, since from their
+point of view nothing about the cache name changed. Also: use the icon
+filenames that actually exist in `/icons/` (`icon-192x192.png` etc., not
+`icon-192.png`) and don't drop any of the sizes already listed in the file —
+only the additions below are new:
+
 ```js
-const CACHE_NAME = 'stm-shell-v2';   // was 'stm-shell-v1' — MUST bump so the
+const CACHE_NAME = 'stm-shell-v3';   // was 'stm-shell-v2' — MUST bump so the
                                      // new file list actually gets cached
 
 const SHELL_FILES = [
@@ -295,9 +240,8 @@ const SHELL_FILES = [
   './index.html',
   './css/styles.css',
   './manifest.webmanifest',
-  './icons/icon-192.png',
-  './icons/icon-512.png',
-  // app modules
+  // ...keep every existing ./icons/icon-*.png entry already in the file...
+  // app modules — NEW, this is what 9.3 actually adds
   './js/data.js',
   './js/util.js',
   './js/router.js',
@@ -311,7 +255,8 @@ const SHELL_FILES = [
   './js/views/snacks.js',
   './js/views/fundraisers.js',
   './js/views/settings.js',
-  // vendored libs (large, frozen once pinned)
+  './js/views/communications.js',   // Stage 8.5 — added after this doc's first draft
+  // vendored libs (already present)
   './js/vendor/xlsx.full.min.js',
   './js/vendor/jspdf.umd.min.js'
 ];
@@ -409,8 +354,8 @@ rebuild it):
   broken empty `<select>`.
 - **Weekly Update with zero upcoming events** shows the "No practices or
   games scheduled…" fallback (Stage 8.5), and **Email All with zero emails**
-  is disabled and labeled — now actually un-clickable thanks to 9.1's
-  `a.disabled` rule.
+  is disabled and labeled — un-clickable thanks to the existing
+  `.btn-link.disabled` rule (confirmed still present/applied in 9.1).
 - **Deleted foreign keys tolerated everywhere they surface**: export shows
   `(deleted parent)` / `(unknown)`; snacks show `(deleted parent)`; parents/
   schedule don't throw on an orphaned link. (Resolvers already do this —
@@ -434,8 +379,8 @@ tolerant-placeholder pattern already used elsewhere. No new patterns.
   doesn't appear in the other.
 - **Chrome / Android**: install banner, standalone launch, maskable icon not
   clipped.
-- **Desktop Chrome + one of Firefox/Safari**: all six views, backup
-  round-trip, export.
+- **Desktop Chrome + one of Firefox/Safari**: all seven views (six original
+  CRUD views + Communications from Stage 8.5), backup round-trip, export.
 - **Insecure-context `uuid()` fallback**: open `index.html` via `file://`
   (not `http://`) and confirm `crypto.randomUUID` absence falls back without
   error — adding a record still produces a valid id. (Note: ES-module `import`
@@ -457,9 +402,13 @@ tolerant-placeholder pattern already used elsewhere. No new patterns.
 - [ ] Verify **vendored versions are recorded** in
       `FootballManager_Architecture.md` §2 (exact SheetJS + jsPDF versions and
       vendored date — from Stage 7). No `-latest` references anywhere.
-- [ ] Verify **brand color `#123524` is consistent** across
-      `manifest.webmanifest` (×2), the `theme-color` meta in `index.html`, and
-      the icon-generation `BG` — they're hand-synced and easy to drift.
+- [ ] Verify **brand color `#011325` is consistent** across
+      `manifest.webmanifest` (`background_color` + `theme_color`) and the
+      `theme-color` meta in `index.html` — they're hand-synced and easy to
+      drift. (Corrected from an earlier `#123524` placeholder this doc used
+      before the final icon set/brand color landed — as of this revision all
+      three are already `#011325` and match; just re-verify on deploy since
+      nothing enforces it.)
 - [ ] Verify **all paths are relative** (`./…`) — manifest `start_url`/
       `scope`/icon `src`, the manifest `<link>`, the two vendor `<script>`
       tags, and the module boot. A leading `/` 404s on the Pages subpath.
@@ -511,6 +460,17 @@ These were considered and intentionally left out of scope:
 
 ## Stop point
 
-Once Stage 9's gate passes, the app is done. There is no Stage 10 in the
-current plan — anything beyond here is on the deferral list above and is a
-new, optional effort rather than a continuation of this build.
+Once Stage 9's gate passes, this build is done as originally scoped —
+anything on the deferral list above is a new, optional effort rather than a
+continuation.
+
+**Correction:** an earlier draft of this section said "there is no Stage 10
+in the current plan." That's no longer accurate — `FootballManager_
+ClaudeCode_Stage10.md` exists alongside this file (Team View dashboard,
+roster filter/sort, schedule upcoming/past split, data-hygiene prompts) and
+was uploaded the same session as this doc. It is **not** part of this
+build's required scope and its own text is explicit that it assumes Stage
+9's gate already passed ("Stages 0–9 are already implemented... and pass
+their gates") — which, as of this revision, is not yet true. Don't start
+Stage 10 until Stage 9's gate has actually passed and been confirmed; treat
+it the same as any other deferred/optional follow-on until then.

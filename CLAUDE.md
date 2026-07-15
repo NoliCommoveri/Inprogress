@@ -7,6 +7,14 @@ Hosted on GitHub Pages. All data lives in the browser's `localStorage`.
 ## Reference docs
 - `FootballManager_Architecture.md` — data model, schema, full workflows.
 - `FootballManager_BuildPlan.md` — staged checklist with acceptance gates.
+- `docs/FootballManager_ClaudeCode_*.md` — self-contained per-stage build
+  instructions (Stages0-3, Stages4-6, Stages7-8, Stage8.5-Messaging, Stage9,
+  Stage10). `BuildPlan.md` is the source of truth for what's actually
+  done/checked off; a per-stage doc can go stale if the codebase moves
+  faster than the doc gets synced back — cross-check against the real files
+  before trusting either one blindly.
+- `docs/FootballManager_UXReview_2026-07-15.md` — live-usage UX feedback and
+  the mobile-layout/opponent-modal changes it produced.
 
 Check the relevant section of these before writing a file you haven't
 touched yet. Don't re-derive schema or workflow details from scratch.

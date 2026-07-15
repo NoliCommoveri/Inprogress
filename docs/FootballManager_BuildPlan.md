@@ -294,21 +294,115 @@ state wasn't visibly distinct — both fixed in `css/styles.css`._
 
 ---
 
+## Stage 8.5 — Communications / Weekly Update (`messaging.js` + `views/communications.js`)
+
+Not originally in this plan — inserted between Stage 8 and Stage 9 per
+`FootballManager_ClaudeCode_Stage8.5-Messaging.md`. Recorded here after the
+fact; this section was missing from the plan even though the stage shipped
+(PRs [#10](https://github.com/NoliCommoveri/Inprogress/pull/10)–[#11](https://github.com/NoliCommoveri/Inprogress/pull/11)),
+which is exactly the kind of drift a docs-review pass is meant to catch.
+
+- [x] `js/messaging.js`: Weekly Update text builder (upcoming events, snack
+      assignments) and per-parent `mailto:`/`sms:` link builders.
+- [x] `js/views/communications.js`, routed at `#/communications`, nav link
+      placed after Parents: Weekly Update broadcast panel + per-parent
+      quick-contact list, replacing the earlier draft that split this across
+      Schedule and Parents.
+- [x] Empty state: zero upcoming events shows a fallback message; "Email All"
+      is disabled (styled `<a>`, not `<button>`) and unclickable when there
+      are no recipient emails.
+- [x] `mailto:` body encoding fixed to use spaces, not `+` (PR #11).
+- [x] Single-contact Email/Text links prefilled with the weekly digest (PR #10 follow-up).
+
+**Gate:** Weekly Update text is accurate for a populated week; Email All and
+per-parent links open with correct recipients/body; no schema change
+(`SCHEMA_VERSION` untouched).
+
+_No new verification note added here — see
+`FootballManager_ClaudeCode_Stage8.5-Messaging.md` and PRs #9–#11 for the
+build/verification record that should have been mirrored into this file at
+the time._
+
+---
+
+## PWA scaffolding — manifest, service worker, icons
+
+Also not originally in this plan; shipped in PRs
+[#12](https://github.com/NoliCommoveri/Inprogress/pull/12)–[#13](https://github.com/NoliCommoveri/Inprogress/pull/13)
+between Stage 8.5 and Stage 9, and is a stated prerequisite in
+`FootballManager_ClaudeCode_Stage9.md`'s opening summary ("Everything before
+this is already implemented... PWA scaffolding"). Recorded here after the
+fact for the same reason as Stage 8.5 above.
+
+- [x] `manifest.webmanifest`: `start_url`/`scope` relative (`./`), full icon
+      set declared (16px–512px + maskable 192/512), `background_color`/
+      `theme_color` set to `#011325`.
+- [x] `sw.js`: installs a shell cache (`CACHE_NAME`), network-first for
+      navigations, cache-first for shell assets; currently caches the HTML
+      shell + CSS + icons + vendored export libs, but **not** the app's own
+      `js/*.js` modules — see Stage 9.3 below, this is the offline gap it
+      fixes.
+- [x] Full branded icon set generated and committed to `/icons/` (16×16
+      through 512×512, plus maskable 192/512).
+- [ ] Real offline verification (cached shell hydrates without a network
+      hit) — blocked on Stage 9.3, not done yet.
+
+**Gate:** install banner appears on Chrome/Android; `manifest.webmanifest`
+and `sw.js` both 200 with no console errors. The *offline-actually-works*
+gate belongs to Stage 9.3, not here.
+
+---
+
 ## Stage 9 — Hardening & deploy
 
-- [ ] **Durability walkthrough** of §1.1 failure modes documented for the admin:
-      clearing site data, incognito, Safari/iOS ITP ~7-day eviction, and the
-      **origin-change** trap (Pages → custom domain loses data; only
-      export/import bridges it).
-- [ ] Verify **no third-party scripts** anywhere (no analytics, no CDN fonts
-      that execute JS) — hard rule (§2).
-- [ ] Cross-browser smoke test incl. Safari/iOS (the ITP eviction target).
-- [ ] Insecure-context check: `uuid()` fallback works if opened via `file://`.
-- [ ] Empty-state and error-tolerance pass on every view.
-- [ ] Final deploy on `main`; verify live Pages URL end-to-end.
+The detailed, authoritative instructions for this stage are
+`FootballManager_ClaudeCode_Stage9.md` (sub-stages 9.1–9.7) — it supersedes
+the shorter list below, which predates Stage 8.5 and the PWA work and was
+never reconciled with the fuller doc. Checklist mirrored here for tracking;
+**none of this is implemented yet** as of this docs-review pass:
 
-**Gate:** a full dry run — seed → data entry → backup → simulated wipe → import
-→ export — completes cleanly on the live site.
+- [ ] **9.1 — Minimal functional CSS pass**: iOS safe-area/notch padding
+      (`env(safe-area-inset-*)` + `viewport-fit=cover`); confirm the
+      "disabled" Email-All link (`.btn-link.disabled`) is genuinely
+      unclickable. (`css/styles.css` itself is already built out — this is
+      a small patch, not a rewrite.)
+- [ ] **9.2 — Harden `importBackup`**: validate shape/`schemaVersion` before
+      touching the live store; a bad file must leave existing data untouched
+      and show a clear error (Architecture §7).
+- [ ] **9.3 — Make the PWA actually work offline**: precache the app's own
+      JS modules (not just the shell/CSS/icons/vendor libs) so airplane mode
+      → relaunch loads the **working app**, not a stuck "Loading…" shell;
+      bump `CACHE_NAME` (currently `stm-shell-v2` → `v3`).
+- [ ] **9.4 — In-app durability / help section**: collapsible "Keeping your
+      data safe" section in Settings covering §1.1 failure modes, the iOS
+      installed-app-vs-Safari-tab partition trap, and the
+      install-mitigates-eviction tip. (Supersedes the durability-walkthrough
+      bullet from the original version of this section — it has to live in
+      the app, not a repo doc a non-developer admin will never open.)
+- [ ] **9.5 — Empty-state & error-tolerance verification** on every view.
+- [ ] **9.6 — Cross-browser & insecure-context smoke test** incl. Safari/iOS
+      (the ITP eviction target) and a `file://` open to check the `uuid()`
+      fallback.
+- [ ] **9.7 — Deploy checklist**: `CACHE_NAME` bump, zero third-party
+      requests, vendored versions recorded, brand color `#011325` consistent,
+      all paths relative, full live-URL dry run, deploy from `main` root.
+
+**Gate:** a full dry run — seed → data entry → backup → simulated wipe →
+import → export — completes cleanly on the live site, airplane mode →
+relaunch loads the fully working app (not just the shell), and the in-app
+durability section is present. Full gate text in
+`FootballManager_ClaudeCode_Stage9.md`.
+
+---
+
+## Stage 10 (optional, not yet started)
+
+`FootballManager_ClaudeCode_Stage10.md` describes an optional follow-on —
+Team View dashboard, roster filter/sort, Schedule upcoming/past split, and a
+launch-time data-hygiene prompt. It is **not** part of this plan's required
+scope and explicitly assumes Stage 9's gate has already passed. Do not start
+it until Stage 9 is done and confirmed; tracked here only so the doc isn't
+orphaned/undiscoverable from this file.
 
 ---
 
