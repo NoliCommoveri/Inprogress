@@ -13,11 +13,10 @@ Everything routes through `data.js`. Build that layer first and it stays true.
 
 ## Stage 0 — Repo & scaffold
 
-- [ ] Create the GitHub repo; enable **GitHub Pages** (deploy from `main`, root).
-      _(repo already exists; Pages enablement not verifiable from this session —
-      confirm manually)._
-- [ ] Confirm the Pages URL and note the exact origin (`you.github.io/repo`) —
-      this is the localStorage boundary (§1.1). _(pending Pages confirmation above)_
+- [x] Create the GitHub repo; enable **GitHub Pages** (deploy from `main`, root).
+      _(confirmed by admin)._
+- [x] Confirm the Pages URL and note the exact origin (`you.github.io/repo`) —
+      this is the localStorage boundary (§1.1). _(confirmed by admin)._
 - [x] Lay down the file tree from §6:
   - [x] `/index.html`
   - [x] `/css/styles.css`
