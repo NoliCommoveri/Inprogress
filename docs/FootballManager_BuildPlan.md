@@ -107,14 +107,23 @@ errors._
 
 ## Stage 3 — Cross-tab sync + first-run seeding
 
-- [ ] `storage` event listener: reload cache from `e.newValue`, notify subs
+- [x] `storage` event listener: reload cache from `e.newValue`, notify subs
       (§9.2). Ignore events for other keys.
-- [ ] `seed.js`: on first run (no `stm:v1`), create empty store and seed a few
+- [x] `seed.js`: on first run (no `stm:v1`), create empty store and seed a few
       `fundraiserPlatforms` (e.g. DoubleGood); leave `opponents` empty (§7).
-- [ ] Wire seeding into boot so it runs exactly once.
+- [x] Wire seeding into boot so it runs exactly once.
 
 **Gate:** open two tabs; a save in tab A triggers a re-render callback in tab B
 reading fresh state. Fresh origin shows seeded platforms.
+
+_Verified locally (`python3 -m http.server` + Playwright, two-page context
+sharing one origin): a fresh origin seeded `fundraiserPlatforms` with
+DoubleGood, GoFundMe, and Snap! Raise, and `opponents` stayed empty. Calling
+`updateSettings()` in tab A fired tab B's `subscribe()` callback via the
+native `storage` event, and `getData()` in tab B reflected the new
+`teamName` immediately. Reloading tab A afterward left the platform list
+unchanged (three entries, no duplicates), confirming `seedIfNeeded()` only
+seeds once thanks to the new `isFirstRun()` check. No console errors._
 
 ---
 
