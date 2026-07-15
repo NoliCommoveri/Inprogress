@@ -217,3 +217,48 @@ button:hover { background: var(--color-primary-dark); }
 }
 
 .import-label { display: inline-flex; align-items: center; gap: 6px; }
+
+/* Modals */
+dialog {
+  background: var(--color-surface);
+  color: var(--color-text);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius);
+  padding: var(--gap);
+  min-width: 280px;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.18);
+}
+
+dialog::backdrop {
+  background: rgba(15, 23, 30, 0.45);
+}
+
+dialog h3 {
+  margin-top: 0;
+}
+
+dialog form {
+  flex-direction: column;
+  align-items: stretch;
+}
+
+dialog form input, dialog form select {
+  width: 100%;
+}
+
+.modal-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+  margin-top: 4px;
+}
+
+.modal-actions .cancel-btn {
+  background: var(--color-surface);
+  color: var(--color-text);
+  border-color: var(--color-border);
+}
+
+.modal-actions .cancel-btn:hover {
+  background: #eef1f4;
+}

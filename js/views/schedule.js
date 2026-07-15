@@ -25,6 +25,18 @@ export function mount(container) {
       <button type="button" id="new-opponent-btn">+ New opponent</button>
       <button type="submit">Add Event</button>
     </form>
+
+    <dialog id="opponent-dialog">
+      <h3>New Opponent</h3>
+      <form id="opponent-form">
+        <input name="name" placeholder="Opponent name" required />
+        <input name="homeLocation" placeholder="Home location (optional)" />
+        <div class="modal-actions">
+          <button type="button" class="cancel-btn" id="opponent-cancel-btn">Cancel</button>
+          <button type="submit">Add Opponent</button>
+        </div>
+      </form>
+    </dialog>
   `;
 
   const tbody = container.querySelector('#schedule-body');
@@ -105,11 +117,26 @@ export function mount(container) {
       updateEvent(id, { finalScoreOpponent: e.target.value === '' ? null : Number(e.target.value) });
   });
 
+  const oppDialog = container.querySelector('#opponent-dialog');
+  const oppForm = container.querySelector('#opponent-form');
+
   container.querySelector('#new-opponent-btn').addEventListener('click', () => {
-    const name = prompt('Opponent name?');
+    oppForm.reset();
+    oppDialog.showModal();
+  });
+
+  container.querySelector('#opponent-cancel-btn').addEventListener('click', () => {
+    oppDialog.close();
+  });
+
+  oppForm.addEventListener('submit', (e) => {
+    e.preventDefault();
+    const fd = new FormData(oppForm);
+    const name = fd.get('name').trim();
     if (!name) return;
-    const homeLocation = prompt('Home location (optional)?') || '';
+    const homeLocation = fd.get('homeLocation').trim();
     const opp = addOpponent({ name, homeLocation });
+    oppDialog.close();
     renderOpponentOptions(oppSelect, opp.id);
   });
 
