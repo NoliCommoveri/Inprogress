@@ -739,3 +739,41 @@ tr.stale-event td:first-child {
   background: none;
   color: var(--color-text);
 }
+
+/* Settings — Danger Zone */
+.danger-zone {
+  border-color: var(--color-danger);
+  background: #fdecea;
+}
+.danger-zone h3 {
+  color: var(--color-danger);
+  margin-top: 0;
+}
+.danger-zone > p {
+  font-size: 0.9rem;
+}
+#reset-confirm-panel {
+  margin-top: 10px;
+  padding-top: 10px;
+  border-top: 1px solid rgba(185, 28, 28, 0.3);
+}
+#reset-confirm-input {
+  width: 100%;
+  max-width: 280px;
+}
+.danger-zone-actions {
+  display: flex;
+  gap: 8px;
+  margin-top: 10px;
+}
+.btn-danger {
+  background: var(--color-danger);
+  color: #fff;
+  border: none;
+  border-radius: 8px;
+  padding: 8px 16px;
+  font-size: 0.95rem;
+}
+.btn-danger:hover {
+  background: #8f1717;
+}

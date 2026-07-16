@@ -629,6 +629,32 @@ following passed with zero console/page errors:
 Not verified: real iOS/Android device pass (carried over as an owed item
 from Stage 9.6, unchanged by this stage).
 
+**Follow-up — Settings Danger Zone (hard reset):** added ad hoc, not from a
+build doc, to unblock repeated manual testing of first-run/wizard behavior
+without clearing browser storage by hand each time.
+- [x] `js/data.js`: `hardResetAllData()` — `localStorage.removeItem(STORAGE_KEY)`
+      + clears the in-memory cache. No subscriber notification; the caller
+      reloads the page so every module (`seed.js`, `wizard.js`, all views)
+      reinitializes exactly like a genuinely fresh browser, rather than
+      trying to reproduce that boot sequence in place.
+- [x] `js/views/settings.js`: new "Danger Zone" section at the bottom of
+      Settings — a "Reset All Data…" button reveals a typed-confirmation
+      panel (must type the literal word `RESET`, case-sensitive, before
+      "Erase everything" enables); Cancel collapses it without touching
+      data.
+- [x] `css/styles.css`: `.danger-zone` (danger-tinted card, reusing
+      `--color-danger`) and `.btn-danger`.
+
+**Verification:** Playwright, one context: confirmed the panel starts
+hidden and the confirm button starts disabled; typing a partial or
+wrong-case match keeps it disabled; Cancel hides the panel and leaves
+existing data (`getPlayers()`) untouched; typing the exact word enables
+the button; clicking it wipes `stm:v1`, reloads, and lands on a genuinely
+empty store — `getPlayers().length === 0`, `settings.teamName === ''`,
+`fundraiserPlatforms` reseeded to 3 (confirms `seedIfNeeded()` re-ran), and
+the wizard auto-opened again (confirms `hasSeenWizard` reset along with
+everything else). No console/page errors.
+
 ---
 
 ## Deferred (explicitly out of scope — §10)
