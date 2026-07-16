@@ -16,7 +16,8 @@ function fmtTime(e) {
 
 export function mount(container) {
   container.innerHTML = `
-    <h2 id="team-heading">Team</h2>
+    <h2 id="team-heading" class="team-heading">Team</h2>
+    <p id="team-season" class="team-season"></p>
     <div class="dashboard-cards">
       <section class="record-card">
         <h3>Record</h3>
@@ -38,6 +39,7 @@ export function mount(container) {
   `;
 
   const heading  = container.querySelector('#team-heading');
+  const seasonEl = container.querySelector('#team-season');
   const recordEl = container.querySelector('#record-line');
   const gameEl   = container.querySelector('#next-game');
   const practEl  = container.querySelector('#next-practice');
@@ -46,9 +48,8 @@ export function mount(container) {
 
   function render() {
     const s = getSettings();
-    heading.textContent = s.teamName
-      ? `${s.teamName}${s.season ? ` — ${s.season}` : ''}`
-      : 'Team';
+    heading.textContent = s.teamName || 'Team';
+    seasonEl.textContent = s.season ? `Season - ${s.season}` : '';
 
     const { wins, losses, ties } = getTeamRecord();
     recordEl.textContent = ties > 0 ? `${wins}–${losses}–${ties}` : `${wins}–${losses}`;

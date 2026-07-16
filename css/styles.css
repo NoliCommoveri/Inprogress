@@ -37,6 +37,7 @@ header {
 header h1 {
   margin: 0 0 8px;
   font-size: 1.3rem;
+  text-align: center;
 }
 
 #main-nav {
@@ -214,6 +215,44 @@ button:hover { background: var(--color-primary-dark); }
   gap: 6px;
   align-items: center;
   padding: 4px 0;
+}
+
+.fundraiser-group h3 {
+  margin-top: 0;
+}
+
+.fundraiser-summary-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+}
+
+.fundraiser-collapsed {
+  padding: 8px var(--gap);
+}
+
+.fundraiser-summary-name {
+  font-weight: 600;
+}
+
+.fundraiser-summary-stats {
+  color: var(--color-text-muted);
+  font-size: 0.9rem;
+}
+
+.fundraiser-completed:not(.fundraiser-collapsed) .fundraiser-summary-row {
+  margin-bottom: 8px;
+}
+
+.f-name-display {
+  font-size: 1.05rem;
+  margin-right: 4px;
+}
+
+.f-status-display {
+  color: var(--color-text-muted);
+  text-transform: capitalize;
 }
 
 /* Settings / backup / export */
@@ -468,6 +507,22 @@ dialog form input, dialog form select {
 }
 
 /* Team dashboard */
+.team-heading {
+  text-align: center;
+  font-size: 2.2rem;
+  margin: 0 0 4px;
+}
+
+.team-season {
+  text-align: center;
+  color: var(--color-text-muted);
+  margin: 0 0 16px;
+}
+
+.record-card {
+  text-align: center;
+}
+
 .dashboard-cards {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
@@ -484,6 +539,11 @@ dialog form input, dialog form select {
   color: var(--color-text-muted);
   text-transform: uppercase;
   letter-spacing: 0.03em;
+}
+
+.next-game-card h3,
+.next-practice-card h3 {
+  font-size: 1.05rem;
 }
 
 .big-stat {
