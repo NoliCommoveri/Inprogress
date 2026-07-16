@@ -37,6 +37,7 @@ header {
 header h1 {
   margin: 0 0 8px;
   font-size: 1.3rem;
+  text-align: center;
 }
 
 #main-nav {
@@ -468,6 +469,22 @@ dialog form input, dialog form select {
 }
 
 /* Team dashboard */
+.team-heading {
+  text-align: center;
+  font-size: 2.2rem;
+  margin: 0 0 4px;
+}
+
+.team-season {
+  text-align: center;
+  color: var(--color-text-muted);
+  margin: 0 0 16px;
+}
+
+.record-card {
+  text-align: center;
+}
+
 .dashboard-cards {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
