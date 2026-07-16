@@ -284,6 +284,23 @@ button:disabled {
   margin-bottom: var(--gap);
 }
 
+.team-info-section .field-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.team-info-section .field-row + .field-row {
+  margin-top: 6px;
+}
+.team-info-section label {
+  width: 90px;
+  flex-shrink: 0;
+  white-space: nowrap;
+}
+.team-info-section input {
+  width: 160px;
+}
+
 .add-form {
   background: var(--color-surface);
   border: 1px solid var(--color-border);

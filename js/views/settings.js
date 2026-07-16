@@ -21,9 +21,15 @@ export function mount(container) {
       <div id="get-app-content"></div>
     </dialog>
 
-    <section>
-      <label>Team name: <input id="team-name" /></label><br/>
-      <label>Season: <input id="season" /></label>
+    <section class="team-info-section">
+      <div class="field-row">
+        <label for="team-name">Team name:</label>
+        <input id="team-name" />
+      </div>
+      <div class="field-row">
+        <label for="season">Season:</label>
+        <input id="season" />
+      </div>
     </section>
 
     <section class="backup-section">
