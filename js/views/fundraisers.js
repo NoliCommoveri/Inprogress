@@ -26,11 +26,17 @@ export function mount(container) {
       <input name="goalAmount" type="number" step="0.01" placeholder="Goal $" />
       <button type="submit">Add Fundraiser</button>
     </form>
+    <section class="fundraiser-group">
+      <h3>Completed</h3>
+      <div id="fundraisers-completed"></div>
+    </section>
   `;
 
   const list = container.querySelector('#fundraisers-list');
+  const completedList = container.querySelector('#fundraisers-completed');
   const form = container.querySelector('#add-fundraiser-form');
   const platformSelect = container.querySelector('#platform-select');
+  const expandedCompleted = new Set();
 
   function renderPlatformOptions(select, selectedId = '') {
     const opts = getFundraiserPlatforms().map(p =>
@@ -38,49 +44,80 @@ export function mount(container) {
     select.innerHTML = `<option value="">— In person —</option>${opts}`;
   }
 
+  function cardBodyHtml(f) {
+    const pct = f.goalAmountCents > 0
+      ? Math.min(100, Math.round(100 * f.raisedAmountCents / f.goalAmountCents)) : 0;
+    const occurrences = getFundraiserOccurrencesForFundraiser(f.id);
+    return `
+      <input class="f-name" value="${escapeHtml(f.name)}" />
+      <select class="f-status">
+        ${['planned', 'active', 'completed', 'canceled'].map(s =>
+          `<option value="${s}" ${f.status === s ? 'selected' : ''}>${s}</option>`).join('')}
+      </select>
+      <span>Platform:
+        <select class="f-platform">
+          <option value="">— In person —</option>${
+            getFundraiserPlatforms().map(p => `<option value="${p.id}" ${p.id === f.platformId ? 'selected' : ''}>${escapeHtml(p.name)}</option>`).join('')
+          }</select>
+      </span>
+      <div class="progress-bar"><div class="progress-fill" style="width:${pct}%"></div></div>
+      Raised $<input class="f-raised" type="number" step="0.01" value="${(f.raisedAmountCents / 100).toFixed(2)}" size="8" />
+      / Goal $<input class="f-goal" type="number" step="0.01" value="${(f.goalAmountCents / 100).toFixed(2)}" size="8" />
+      (${pct}%)
+      <button class="delete-fundraiser-btn">Delete Fundraiser</button>
+      <ul class="occurrence-list">
+        ${occurrences.map(o => `
+          <li data-occ="${o.id}">
+            <input type="date" class="occ-start" value="${o.startDate}" />
+            to <input type="date" class="occ-end" value="${o.endDate}" />
+            <input class="occ-location" placeholder="Location" value="${escapeHtml(o.location)}" />
+            <button class="delete-occ-btn">Remove</button>
+          </li>`).join('')}
+      </ul>
+      <button class="add-occ-btn">+ Add date/occurrence</button>
+    `;
+  }
+
+  function activeCardHtml(f) {
+    return `<div class="fundraiser-card" data-id="${f.id}">${cardBodyHtml(f)}</div>`;
+  }
+
+  function completedCardHtml(f) {
+    const isExpanded = expandedCompleted.has(f.id);
+    const pct = f.goalAmountCents > 0
+      ? Math.min(100, Math.round(100 * f.raisedAmountCents / f.goalAmountCents)) : 0;
+    const summary = `
+      <div class="fundraiser-summary-row">
+        <button type="button" class="fundraiser-toggle expand-toggle" aria-expanded="${isExpanded}" title="${isExpanded ? 'Collapse' : 'Expand'}">${isExpanded ? '▾' : '▸'}</button>
+        <span class="fundraiser-summary-name">${escapeHtml(f.name)}</span>
+        <span class="fundraiser-summary-stats">$${(f.raisedAmountCents / 100).toFixed(2)} / $${(f.goalAmountCents / 100).toFixed(2)} (${pct}%)</span>
+      </div>`;
+    return `
+      <div class="fundraiser-card fundraiser-completed ${isExpanded ? '' : 'fundraiser-collapsed'}" data-id="${f.id}">
+        ${summary}
+        ${isExpanded ? cardBodyHtml(f) : ''}
+      </div>`;
+  }
+
   function render() {
     renderPlatformOptions(platformSelect);
     const fundraisers = getFundraisers();
-    list.innerHTML = fundraisers.map(f => {
-      const pct = f.goalAmountCents > 0
-        ? Math.min(100, Math.round(100 * f.raisedAmountCents / f.goalAmountCents)) : 0;
-      const occurrences = getFundraiserOccurrencesForFundraiser(f.id);
-      return `
-        <div class="fundraiser-card" data-id="${f.id}">
-          <input class="f-name" value="${escapeHtml(f.name)}" />
-          <select class="f-status">
-            ${['planned', 'active', 'completed', 'canceled'].map(s =>
-              `<option value="${s}" ${f.status === s ? 'selected' : ''}>${s}</option>`).join('')}
-          </select>
-          <span>Platform:
-            <select class="f-platform">
-              <option value="">— In person —</option>${
-                getFundraiserPlatforms().map(p => `<option value="${p.id}" ${p.id === f.platformId ? 'selected' : ''}>${escapeHtml(p.name)}</option>`).join('')
-              }</select>
-          </span>
-          <div class="progress-bar"><div class="progress-fill" style="width:${pct}%"></div></div>
-          Raised $<input class="f-raised" type="number" step="0.01" value="${(f.raisedAmountCents / 100).toFixed(2)}" size="8" />
-          / Goal $<input class="f-goal" type="number" step="0.01" value="${(f.goalAmountCents / 100).toFixed(2)}" size="8" />
-          (${pct}%)
-          <button class="delete-fundraiser-btn">Delete Fundraiser</button>
-          <ul class="occurrence-list">
-            ${occurrences.map(o => `
-              <li data-occ="${o.id}">
-                <input type="date" class="occ-start" value="${o.startDate}" />
-                to <input type="date" class="occ-end" value="${o.endDate}" />
-                <input class="occ-location" placeholder="Location" value="${escapeHtml(o.location)}" />
-                <button class="delete-occ-btn">Remove</button>
-              </li>`).join('')}
-          </ul>
-          <button class="add-occ-btn">+ Add date/occurrence</button>
-        </div>`;
-    }).join('') || '<p>No fundraisers yet.</p>';
+    const active = fundraisers.filter(f => f.status !== 'completed');
+    const completed = fundraisers.filter(f => f.status === 'completed');
+
+    list.innerHTML = active.map(activeCardHtml).join('') || '<p>No fundraisers yet.</p>';
+    completedList.innerHTML = completed.map(completedCardHtml).join('') || '<p>No completed fundraisers yet.</p>';
   }
 
-  list.addEventListener('click', (e) => {
+  function onClick(e) {
     const card = e.target.closest('.fundraiser-card');
     if (!card) return;
     const fid = card.dataset.id;
+    if (e.target.classList.contains('fundraiser-toggle')) {
+      if (expandedCompleted.has(fid)) expandedCompleted.delete(fid); else expandedCompleted.add(fid);
+      render();
+      return;
+    }
     if (e.target.classList.contains('delete-fundraiser-btn')) {
       if (confirm('Delete this fundraiser and all its occurrences?')) deleteFundraiser(fid);
     }
@@ -91,9 +128,9 @@ export function mount(container) {
     if (e.target.classList.contains('delete-occ-btn')) {
       deleteFundraiserOccurrence(e.target.closest('li').dataset.occ);
     }
-  });
+  }
 
-  list.addEventListener('change', (e) => {
+  function onChange(e) {
     const card = e.target.closest('.fundraiser-card');
     if (!card) return;
     const fid = card.dataset.id;
@@ -110,7 +147,12 @@ export function mount(container) {
       if (e.target.classList.contains('occ-end')) updateFundraiserOccurrence(oid, { endDate: e.target.value });
       if (e.target.classList.contains('occ-location')) updateFundraiserOccurrence(oid, { location: e.target.value });
     }
-  });
+  }
+
+  list.addEventListener('click', onClick);
+  completedList.addEventListener('click', onClick);
+  list.addEventListener('change', onChange);
+  completedList.addEventListener('change', onChange);
 
   container.querySelector('#new-platform-btn').addEventListener('click', () => {
     const name = prompt('Platform name?');
