@@ -3,7 +3,7 @@ import {
   getPlayers, addPlayer, updatePlayer, deletePlayer,
   getSettings, updateSettings, subscribe
 } from '../data.js';
-import { escapeHtml, centsToDollarsStr } from '../util.js';
+import { escapeHtml, centsToDollarsStr, dollarsToCents } from '../util.js';
 
 // Ordered by roster prevalence (most to least common).
 const POSITIONS = [
@@ -244,8 +244,7 @@ export function mount(container) {
     if (e.target.classList.contains('f-position')) updatePlayer(id, { position: e.target.value });
     if (e.target.classList.contains('f-active')) updatePlayer(id, { active: e.target.checked });
     if (e.target.classList.contains('f-balance')) {
-      const cents = Math.round(parseFloat(e.target.value || '0') * 100);
-      updatePlayer(id, { outstandingBalanceCents: cents });
+      updatePlayer(id, { outstandingBalanceCents: dollarsToCents(e.target.value) });
     }
   });
 
