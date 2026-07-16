@@ -4,6 +4,7 @@ import {
   getOpponents, addOpponent, getOpponentById,
   subscribe
 } from '../data.js';
+import { todayStr } from '../selectors.js';
 import { escapeHtml } from '../util.js';
 
 const STATUS_LABEL = { scheduled: 'Scheduled', canceled: 'Canceled', completed: 'Completed' };
@@ -36,15 +37,28 @@ export function mount(container) {
       </form>
     </dialog>
 
-    <div class="table-scroll">
-      <table class="schedule-table">
-        <thead><tr><th>Date</th><th>Time</th><th>Type</th><th></th></tr></thead>
-        <tbody id="schedule-body"></tbody>
-      </table>
-    </div>
+    <section class="schedule-group">
+      <h3>Upcoming</h3>
+      <div class="table-scroll">
+        <table class="schedule-table">
+          <thead><tr><th>Date</th><th>Time</th><th>Type</th><th></th></tr></thead>
+          <tbody id="schedule-upcoming"></tbody>
+        </table>
+      </div>
+    </section>
+    <section class="schedule-group">
+      <h3>Past</h3>
+      <div class="table-scroll">
+        <table class="schedule-table">
+          <thead><tr><th>Date</th><th>Time</th><th>Type</th><th></th></tr></thead>
+          <tbody id="schedule-past"></tbody>
+        </table>
+      </div>
+    </section>
   `;
 
-  const tbody = container.querySelector('#schedule-body');
+  const upcomingBody = container.querySelector('#schedule-upcoming');
+  const pastBody = container.querySelector('#schedule-past');
   const form = container.querySelector('#add-event-form');
   const addToggle = container.querySelector('#add-toggle');
   const oppSelect = container.querySelector('#opponent-select');
@@ -63,18 +77,14 @@ export function mount(container) {
     select.innerHTML = `<option value="">— No opponent —</option>${opts}`;
   }
 
-  function render() {
-    renderOpponentOptions(oppSelect);
-    const events = [...getEvents()].sort((a, b) =>
-      a.date === b.date ? (a.startTime || '').localeCompare(b.startTime || '') : a.date.localeCompare(b.date));
-
-    tbody.innerHTML = events.map(e => {
+  function rowHtml(e) {
       const opp = e.opponentId ? getOpponentById(e.opponentId) : null;
       const isGame = e.type === 'game';
       const isExpanded = expandedIds.has(e.id);
       const isEditing = editingIds.has(e.id);
+      const stale = e.status === 'scheduled' && e.date < todayStr();
       return `
-        <tr data-id="${e.id}">
+        <tr data-id="${e.id}" class="${stale ? 'stale-event' : ''}">
           ${isEditing ? `
             <td><input type="date" class="f-date" value="${e.date}" /></td>
             <td><input type="time" class="f-start" value="${e.startTime}" /></td>
@@ -85,7 +95,7 @@ export function mount(container) {
               </select>
             </td>
           ` : `
-            <td>${escapeHtml(e.date)}</td>
+            <td>${stale ? '⚠️ ' : ''}${escapeHtml(e.date)}</td>
             <td>${escapeHtml(e.startTime)}</td>
             <td>${TYPE_LABEL[e.type] || e.type}</td>
           `}
@@ -128,10 +138,24 @@ export function mount(container) {
             </div>
           </td>
         </tr>`;
-    }).join('') || '<tr><td colspan="4">No events yet.</td></tr>';
   }
 
-  tbody.addEventListener('click', (e) => {
+  function render() {
+    renderOpponentOptions(oppSelect);
+    const today = todayStr();
+    const sorted = [...getEvents()].sort((a, b) =>
+      a.date === b.date ? (a.startTime || '').localeCompare(b.startTime || '') : a.date.localeCompare(b.date));
+
+    const upcoming = sorted.filter(e => e.date >= today);      // ascending
+    const past = sorted.filter(e => e.date < today).reverse(); // most recent first
+
+    upcomingBody.innerHTML = upcoming.map(rowHtml).join('')
+      || '<tr><td colspan="4">No upcoming events.</td></tr>';
+    pastBody.innerHTML = past.map(rowHtml).join('')
+      || '<tr><td colspan="4">No past events.</td></tr>';
+  }
+
+  function onClick(e) {
     const row = e.target.closest('tr');
     if (!row) return;
     const id = row.dataset.id;
@@ -151,9 +175,9 @@ export function mount(container) {
       if (editingIds.has(id)) editingIds.delete(id); else editingIds.add(id);
       render();
     }
-  });
+  }
 
-  tbody.addEventListener('change', (e) => {
+  function onChange(e) {
     const row = e.target.closest('tr');
     if (!row) return;
     const id = row.dataset.id;
@@ -168,7 +192,12 @@ export function mount(container) {
       updateEvent(id, { finalScoreUs: e.target.value === '' ? null : Number(e.target.value) });
     if (e.target.classList.contains('f-score-opp'))
       updateEvent(id, { finalScoreOpponent: e.target.value === '' ? null : Number(e.target.value) });
-  });
+  }
+
+  upcomingBody.addEventListener('click', onClick);
+  pastBody.addEventListener('click', onClick);
+  upcomingBody.addEventListener('change', onChange);
+  pastBody.addEventListener('change', onChange);
 
   const oppDialog = container.querySelector('#opponent-dialog');
   const oppForm = container.querySelector('#opponent-form');

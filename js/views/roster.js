@@ -8,11 +8,39 @@ import { escapeHtml, centsToDollarsStr } from '../util.js';
 const COMMON_POSITIONS = ['Forward', 'Midfielder', 'Defender', 'Goalkeeper'];
 
 export function mount(container) {
+  // view-local UI state (UI prefs, not cached records — re-derived from
+  // getPlayers() on every render)
+  let filterStatus = 'active';   // 'all' | 'active' | 'inactive'
+  let filterPosition = '';       // '' = any
+  let sortKey = 'jersey';        // 'jersey' | 'last' | 'position' | 'balance'
+  let sortDir = 'asc';           // 'asc' | 'desc'
+
   container.innerHTML = `
     <h2>Roster</h2>
     <datalist id="position-list">
       ${COMMON_POSITIONS.map(p => `<option value="${p}"></option>`).join('')}
     </datalist>
+    <div class="roster-controls">
+      <label>Show:
+        <select id="filter-status">
+          <option value="active">Active only</option>
+          <option value="inactive">Inactive only</option>
+          <option value="all">All</option>
+        </select>
+      </label>
+      <label>Position:
+        <select id="filter-position"><option value="">Any</option></select>
+      </label>
+      <label>Sort by:
+        <select id="sort-key">
+          <option value="jersey">#</option>
+          <option value="last">Last name</option>
+          <option value="position">Position</option>
+          <option value="balance">Balance</option>
+        </select>
+      </label>
+      <button type="button" id="sort-dir" title="Toggle sort direction">▲</button>
+    </div>
     <button type="button" id="add-toggle" class="add-toggle-btn" aria-expanded="false">+ Add Player</button>
     <form id="add-player-form" class="add-form" hidden>
       <input name="jerseyNumber" placeholder="#" size="3" />
@@ -35,6 +63,10 @@ export function mount(container) {
   const tbody = container.querySelector('#roster-body');
   const form = container.querySelector('#add-player-form');
   const addToggle = container.querySelector('#add-toggle');
+  const statusSel = container.querySelector('#filter-status');
+  const posSel = container.querySelector('#filter-position');
+  const sortKeySel = container.querySelector('#sort-key');
+  const sortDirBtn = container.querySelector('#sort-dir');
   const expandedIds = new Set();
   const editingIds = new Set();
 
@@ -44,8 +76,52 @@ export function mount(container) {
     addToggle.setAttribute('aria-expanded', String(willShow));
   });
 
+  function jerseyCmp(a, b) {
+    const na = parseInt(a, 10), nb = parseInt(b, 10);
+    const aNum = !Number.isNaN(na), bNum = !Number.isNaN(nb);
+    if (aNum && bNum) return na - nb;
+    if (aNum) return -1;
+    if (bNum) return 1;
+    return String(a).localeCompare(String(b));
+  }
+
+  function visiblePlayers() {
+    let list = getPlayers().slice();
+
+    if (filterStatus === 'active') list = list.filter(p => p.active);
+    else if (filterStatus === 'inactive') list = list.filter(p => !p.active);
+
+    if (filterPosition) list = list.filter(p => p.position === filterPosition);
+
+    list.sort((a, b) => {
+      let r;
+      if (sortKey === 'jersey') r = jerseyCmp(a.jerseyNumber, b.jerseyNumber);
+      else if (sortKey === 'last') r = String(a.lastName).localeCompare(String(b.lastName));
+      else if (sortKey === 'position') r = String(a.position).localeCompare(String(b.position));
+      else if (sortKey === 'balance') r = (a.outstandingBalanceCents || 0) - (b.outstandingBalanceCents || 0);
+      else r = 0;
+      return sortDir === 'asc' ? r : -r;
+    });
+    return list;
+  }
+
+  function refreshPositionFilterOptions() {
+    // union of common positions + any custom positions actually in use
+    const used = new Set(getPlayers().map(p => p.position).filter(Boolean));
+    COMMON_POSITIONS.forEach(p => used.add(p));
+    const opts = [...used].sort((a, b) => a.localeCompare(b))
+      .map(p => `<option value="${escapeHtml(p)}" ${p === filterPosition ? 'selected' : ''}>${escapeHtml(p)}</option>`)
+      .join('');
+    posSel.innerHTML = `<option value="">Any</option>${opts}`;
+  }
+
   function render() {
-    const players = getPlayers();
+    statusSel.value = filterStatus;
+    sortKeySel.value = sortKey;
+    sortDirBtn.textContent = sortDir === 'asc' ? '▲' : '▼';
+    refreshPositionFilterOptions();
+
+    const players = visiblePlayers();
     const myId = getSettings().myPlayerId;
     tbody.innerHTML = players.map(p => {
       const isExpanded = expandedIds.has(p.id);
@@ -87,8 +163,16 @@ export function mount(container) {
           </div>
         </td>
       </tr>`;
-    }).join('') || '<tr><td colspan="4">No players yet.</td></tr>';
+    }).join('') || `<tr><td colspan="4">No players match this filter.</td></tr>`;
   }
+
+  statusSel.addEventListener('change', () => { filterStatus = statusSel.value; render(); });
+  posSel.addEventListener('change', () => { filterPosition = posSel.value; render(); });
+  sortKeySel.addEventListener('change', () => { sortKey = sortKeySel.value; render(); });
+  sortDirBtn.addEventListener('click', () => {
+    sortDir = sortDir === 'asc' ? 'desc' : 'asc';
+    render();
+  });
 
   tbody.addEventListener('click', (e) => {
     const row = e.target.closest('tr');
