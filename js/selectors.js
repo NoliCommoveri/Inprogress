@@ -2,11 +2,18 @@
 // persistence; data.js stays the only file that touches localStorage.
 import { getData } from './data.js';
 
-// Same 'today' expression already used in snacks.js/fundraisers.js. Dates are
-// 'YYYY-MM-DD' strings compared lexicographically; toISOString() is UTC, so
-// this can flip a few hours early/late vs. local midnight — a known, accepted
-// caveat inherited from the existing code, not worth diverging from here.
-export const todayStr = () => new Date().toISOString().slice(0, 10);
+// Dates are 'YYYY-MM-DD' strings compared lexicographically. Build this from
+// the Date object's *local* calendar fields, not toISOString() (which is UTC):
+// for any timezone west of UTC, toISOString() rolls over to tomorrow's date
+// once local time passes ~evening, which wrongly flagged today's still-
+// upcoming events as past/stale.
+export const todayStr = () => {
+  const d = new Date();
+  const y = d.getFullYear();
+  const m = String(d.getMonth() + 1).padStart(2, '0');
+  const day = String(d.getDate()).padStart(2, '0');
+  return `${y}-${m}-${day}`;
+};
 
 // --- Win / Loss / Tie record: completed games with both scores set ---
 export function getTeamRecord() {
