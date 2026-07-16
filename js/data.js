@@ -21,7 +21,7 @@ function emptyData() {
   return {
     schemaVersion: SCHEMA_VERSION,
     meta: { lastModifiedAt: null, lastBackupAt: null, changesSinceBackup: 0 },
-    settings: { teamName: '', season: '', myPlayerId: null },
+    settings: { teamName: '', season: '', myPlayerId: null, hasSeenWizard: false },
     players: [], parents: [], playerParents: [], opponents: [],
     events: [], snackAssignments: [],
     fundraiserPlatforms: [], fundraisers: [], fundraiserOccurrences: []

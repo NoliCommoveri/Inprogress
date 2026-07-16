@@ -5,6 +5,7 @@ import {
 } from '../data.js';
 import { exportRangeToXlsx, exportRangeToPdf, getEventsInRange } from '../export.js';
 import { todayStr, addDaysStr } from '../selectors.js';
+import { openWizard } from '../wizard.js';
 
 export function mount(container) {
   const today = todayStr();
@@ -73,6 +74,7 @@ export function mount(container) {
         <p>The short version: <strong>export a backup regularly</strong>, and on
            iPhone, install it to your Home Screen and stick to that one copy.</p>
       </details>
+      <button type="button" id="replay-wizard-btn" class="btn-link">▶ Replay the Getting Started tour</button>
     </section>
   `;
 
@@ -87,6 +89,7 @@ export function mount(container) {
   const xlsxBtn = container.querySelector('#export-xlsx-btn');
   const pdfBtn = container.querySelector('#export-pdf-btn');
   const emptyMsg = container.querySelector('#export-empty-msg');
+  const replayWizardBtn = container.querySelector('#replay-wizard-btn');
 
   function render() {
     const s = getSettings();
@@ -133,6 +136,8 @@ export function mount(container) {
     }
     importInput.value = '';
   });
+
+  replayWizardBtn.addEventListener('click', () => openWizard());
 
   startInput.addEventListener('change', updateExportButtons);
   endInput.addEventListener('change', updateExportButtons);

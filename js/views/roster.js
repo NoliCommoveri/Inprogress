@@ -35,7 +35,15 @@ function positionOptionsHtml(selected) {
   return `<option value=""></option>${extra}${opts}`;
 }
 
+const EXPAND_ADD_PLAYER_KEY = 'fm:expandAddPlayerOnce';
+
 export function mount(container) {
+  // One-time hand-off from the wizard's final card — expand the add-player
+  // form on this mount only, then clear the flag so a later normal visit
+  // to Roster starts collapsed as usual.
+  let addFormOpen = sessionStorage.getItem(EXPAND_ADD_PLAYER_KEY) === '1';
+  if (addFormOpen) sessionStorage.removeItem(EXPAND_ADD_PLAYER_KEY);
+
   // view-local UI state (UI prefs, not cached records — re-derived from
   // getPlayers() on every render)
   let filterStatus = 'active';   // 'all' | 'active' | 'inactive'
@@ -66,8 +74,8 @@ export function mount(container) {
       </label>
       <button type="button" id="sort-dir" title="Toggle sort direction">▲</button>
     </div>
-    <button type="button" id="add-toggle" class="add-toggle-btn" aria-expanded="false">+ Add Player</button>
-    <form id="add-player-form" class="add-form" hidden>
+    <button type="button" id="add-toggle" class="add-toggle-btn" aria-expanded="${addFormOpen}">+ Add Player</button>
+    <form id="add-player-form" class="add-form" ${addFormOpen ? '' : 'hidden'}>
       <input name="jerseyNumber" placeholder="#" size="3" />
       <input name="firstName" placeholder="First name" required />
       <input name="lastName" placeholder="Last name" required />

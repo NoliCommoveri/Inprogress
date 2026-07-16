@@ -615,3 +615,127 @@ dialog form input, dialog form select {
 tr.stale-event td:first-child {
   color: var(--color-danger);
 }
+
+/* Getting Started wizard */
+.wizard-dialog {
+  width: min(92vw, 420px);
+  max-height: 80vh;
+  padding: 0;
+  border: none;
+  border-radius: 16px;
+  overflow: hidden;
+}
+.wizard-card {
+  display: flex;
+  flex-direction: column;
+  max-height: 80vh;
+}
+.wizard-progress {
+  display: flex;
+  justify-content: center;
+  gap: 6px;
+  padding: 16px 0 0;
+}
+.wizard-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: #d9d9d9;
+}
+.wizard-dot.active {
+  background: var(--color-primary);
+}
+.wizard-body {
+  overflow-y: auto;
+  padding: 16px 24px;
+  text-align: center;
+}
+.wizard-icon {
+  font-size: 40px;
+  line-height: 1;
+  margin-bottom: 8px;
+}
+.wizard-body h2 {
+  margin: 0 0 8px;
+  font-size: 1.15rem;
+}
+.wizard-body p {
+  margin: 0;
+  color: var(--color-text);
+  font-size: 0.95rem;
+  line-height: 1.4;
+}
+.wizard-form {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin-top: 12px;
+  text-align: left;
+}
+.wizard-form label {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  font-size: 0.85rem;
+  color: var(--color-text-muted);
+}
+.wizard-form input {
+  font-size: 1rem;
+  padding: 8px 10px;
+}
+.wizard-scroll-cue {
+  text-align: center;
+  font-size: 0.75rem;
+  color: var(--color-primary);
+  padding-bottom: 4px;
+}
+.wizard-actions {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 8px;
+  padding: 12px 20px calc(env(safe-area-inset-bottom) + 12px);
+  border-top: 1px solid var(--color-border);
+  flex-wrap: wrap;
+}
+.wizard-actions .btn-secondary {
+  margin-right: auto;
+}
+
+/* Shared button-emphasis classes (wizard is the first consumer, but these
+   are generic enough for any future multi-action dialog). Distinct from
+   .btn-link, which is a solid-filled action pill (see Communications'
+   "Email All") — these three are a Back/Skip/Next hierarchy where the
+   emphasis level itself is the point. */
+.btn-primary {
+  background: var(--color-primary);
+  color: #fff;
+  border: none;
+  border-radius: 8px;
+  padding: 8px 16px;
+  font-size: 0.95rem;
+}
+.btn-secondary {
+  background: none;
+  border: 1px solid var(--color-primary);
+  color: var(--color-primary);
+  border-radius: 8px;
+  padding: 8px 16px;
+  font-size: 0.95rem;
+}
+.btn-secondary:hover {
+  background: var(--color-primary);
+  color: #fff;
+}
+.btn-tertiary {
+  background: none;
+  border: none;
+  color: var(--color-text-muted);
+  padding: 8px 16px;
+  font-size: 0.95rem;
+  text-decoration: underline;
+}
+.btn-tertiary:hover {
+  background: none;
+  color: var(--color-text);
+}

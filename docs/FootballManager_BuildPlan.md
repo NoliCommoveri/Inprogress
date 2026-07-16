@@ -534,6 +534,103 @@ afterward.
 
 ---
 
+## Stage 11 — Getting Started wizard
+
+`docs/FootballManager_ClaudeCode_Stage11-Wizard.md` (build instructions) +
+`docs/FootballManager_Stage11_WizardCopy.md` (verbatim card copy) describe
+this stage. Built concurrently with another instance's roster
+position-dropdown work (`js/views/roster.js`, PR #19) and a style-cleanup
+pass (PR #20, fundraiser edit-lock + Team View centering) — both merged to
+`main` before this stage started, so no conflicting edits landed in
+parallel.
+
+- [x] `js/seed.js`: `seedIfNeeded()` now returns `true`/`false` (seeded or
+      not), seeding logic itself unchanged.
+- [x] `js/data.js`: `emptyData().settings` gained `hasSeenWizard: false`.
+      Additive only — `SCHEMA_VERSION` unchanged at 2, `migrate()` untouched.
+- [x] New `js/wizard-content.js`: `WIZARD_STEPS` array, copy pasted verbatim
+      from the companion doc.
+- [x] New `js/wizard.js`: dialog-driven multi-card flow (Welcome → returning-
+      user branch → six view-tour cards → team-name/season form → closing
+      backup reminder), mirroring the `initNudgeBanner`/`initHygieneBanner`
+      init pattern. Reuses `util.js`'s existing `escapeHtml()` for the
+      Card 10 inputs rather than duplicating a second escape helper.
+- [x] `js/views/roster.js`: one-time `sessionStorage` handshake
+      (`fm:expandAddPlayerOnce`) so the wizard's final card lands on Roster
+      with "+ Add Player" already expanded; cleared after one read so a
+      normal later visit starts collapsed as usual.
+- [x] `index.html`: `#wizard-dialog` mount point + `initWizard()` wired into
+      boot.
+- [x] `js/views/settings.js`: "▶ Replay the Getting Started tour" button in
+      the existing durability help-section, wired to `openWizard()`.
+- [x] `css/styles.css`: wizard dialog/card/progress-dots/form/actions styles,
+      plus `.btn-primary`/`.btn-secondary`/`.btn-tertiary` (new — see
+      deviation note below).
+
+**Deviation from the doc — auto-show gating:** the doc's reference
+`initWizard(dialogEl, { autoShow })` gates auto-open on `seedIfNeeded()`'s
+return value. Testing it directly (Playwright) showed this fails the doc's
+own gate: `seedIfNeeded()` only returns `true` on the *literal* first page
+load ever, because seeding calls `saveData()`, which means `isFirstRun()` is
+already `false` again on the very next reload — even one that reopens a
+wizard nobody finished. That breaks the required "reload mid-flow re-opens
+the wizard" behavior. Fixed by gating on `getSettings().hasSeenWizard ===
+false` (strict, not `?? false`) instead: `emptyData()` now stamps every
+store created from here on with `hasSeenWizard: false` explicitly, so a
+missing key (`undefined`) can only mean a genuine pre-Stage-11 store — the
+exact "must not regress" case — while an explicit `false` means "created
+under this app version, wizard not yet completed," which correctly covers
+every reload of an abandoned session. This makes `wasFirstRun` unnecessary
+for the gate; `seedIfNeeded()` still returns the boolean per the doc, it's
+just unused by `initWizard()` now.
+
+**Deviation from the doc — button classes:** the doc's CSS reuses
+`.btn-link` for the wizard's Skip button and the Settings replay button.
+The codebase's actual `.btn-link` (added in Stage 8.5 for Communications'
+"Email All") is a solid filled green pill, visually identical in weight to
+`.btn-primary` — using it for Skip would make it compete with Next instead
+of reading as the de-emphasized third option the doc's own Back/Skip/Next
+hierarchy calls for. Added a distinct `.btn-tertiary` (muted, underlined,
+no fill) for Skip instead; kept `.btn-link` for the Settings replay button,
+where it's a single standalone action rather than one of three competing
+choices.
+
+**Verification:** served locally (`python3 -m http.server`) and driven with
+Playwright/Chromium (`/opt/pw-browsers/chromium`), one fresh browser context
+per scenario so `localStorage` never bled between checks. All of the
+following passed with zero console/page errors:
+- Fresh origin auto-opens on Card 1; no Back/Skip on Card 1.
+- Reloading mid-flow (never exited) re-opens at Card 1 — confirms the
+  gating fix above.
+- Card 2: "I'm new here" advances to Card 3 with the wizard still open;
+  "I've used this before" (separate context) closes the wizard, sets
+  `hasSeenWizard: true`, and navigates to `#/settings`.
+- Cards 3–10 show Back + Skip + Next.
+- Card 10: typing into Team name/Season and blurring persisted through
+  `updateSettings()` (checked via `getSettings()` in-page); going Back to
+  Card 9 and forward again re-showed the typed values.
+- Card 11: no Skip button; primary label reads "Add your first player!";
+  clicking it closes the wizard, sets `hasSeenWizard: true`, navigates to
+  `#/roster` with the add-player form expanded. A second, separate
+  navigation to Roster afterward showed the form collapsed again — the
+  session flag is consumed once, not sticky.
+- Skip, Escape, and a backdrop click (three separate contexts) each closed
+  the wizard, set `hasSeenWizard: true`, and didn't reopen it on a
+  follow-up reload.
+- A store with real data (`addPlayer`) but `settings.hasSeenWizard` deleted
+  entirely (simulating a pre-Stage-11 backup) did **not** auto-open the
+  wizard on reload; clicking "▶ Replay the Getting Started tour" in
+  Settings on that same store opened it manually from Card 1.
+- 340px-wide viewport: no horizontal overflow. 380×480 viewport: the scroll
+  cue appeared on a card whose body actually overflowed.
+- A hand-built `schemaVersion: 1` backup (no `hasSeenWizard` key) imported
+  cleanly via `importBackup()` and landed at `schemaVersion: 2`.
+
+Not verified: real iOS/Android device pass (carried over as an owed item
+from Stage 9.6, unchanged by this stage).
+
+---
+
 ## Deferred (explicitly out of scope — §10)
 
 - [ ] Backend swap (Firebase/Supabase) — would repoint only `loadData()`/
