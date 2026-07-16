@@ -503,6 +503,11 @@ dialog form input, dialog form select {
   letter-spacing: 0.03em;
 }
 
+.next-game-card h3,
+.next-practice-card h3 {
+  font-size: 1.05rem;
+}
+
 .big-stat {
   font-size: 2rem;
   font-weight: 700;
