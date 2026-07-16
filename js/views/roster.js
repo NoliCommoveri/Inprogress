@@ -5,7 +5,35 @@ import {
 } from '../data.js';
 import { escapeHtml, centsToDollarsStr } from '../util.js';
 
-const COMMON_POSITIONS = ['Forward', 'Midfielder', 'Defender', 'Goalkeeper'];
+// Ordered by roster prevalence (most to least common).
+const POSITIONS = [
+  { code: 'CB', label: 'Cornerback (CB)' },
+  { code: 'S', label: 'Safety (S)' },
+  { code: 'DL', label: 'Defensive Line (DL)' },
+  { code: 'OL', label: 'Offensive Line (OL)' },
+  { code: 'LB', label: 'Linebacker (LB)' },
+  { code: 'WR', label: 'Wide Receiver (WR)' },
+  { code: 'RB', label: 'Running Back (RB)' },
+  { code: 'TE', label: 'Tight End (TE)' },
+  { code: 'QB', label: 'Quarterback (QB)' },
+  { code: 'K', label: 'Kicker (K)' },
+  { code: 'P', label: 'Punter (P)' },
+  { code: 'LS', label: 'Long Snapper (LS)' }
+];
+const POSITION_CODES = POSITIONS.map(p => p.code);
+const POSITION_LABELS = Object.fromEntries(POSITIONS.map(p => [p.code, p.label]));
+
+function positionOptionsHtml(selected) {
+  // preserve any legacy/custom value already on the record so editing
+  // doesn't silently clobber it if the admin doesn't touch the field
+  const extra = selected && !POSITION_CODES.includes(selected)
+    ? `<option value="${escapeHtml(selected)}" selected>${escapeHtml(selected)}</option>`
+    : '';
+  const opts = POSITIONS.map(p =>
+    `<option value="${p.code}" ${p.code === selected ? 'selected' : ''}>${escapeHtml(p.label)}</option>`
+  ).join('');
+  return `<option value=""></option>${extra}${opts}`;
+}
 
 export function mount(container) {
   // view-local UI state (UI prefs, not cached records — re-derived from
@@ -17,9 +45,6 @@ export function mount(container) {
 
   container.innerHTML = `
     <h2>Roster</h2>
-    <datalist id="position-list">
-      ${COMMON_POSITIONS.map(p => `<option value="${p}"></option>`).join('')}
-    </datalist>
     <div class="roster-controls">
       <label>Show:
         <select id="filter-status">
@@ -46,7 +71,7 @@ export function mount(container) {
       <input name="jerseyNumber" placeholder="#" size="3" />
       <input name="firstName" placeholder="First name" required />
       <input name="lastName" placeholder="Last name" required />
-      <input name="position" placeholder="Position" list="position-list" />
+      <select name="position">${positionOptionsHtml('')}</select>
       <label class="check-label"><input type="checkbox" name="followPlayer" /> Follow this player</label>
       <button type="submit">Add Player</button>
     </form>
@@ -106,11 +131,12 @@ export function mount(container) {
   }
 
   function refreshPositionFilterOptions() {
-    // union of common positions + any custom positions actually in use
+    // union of standard positions + any legacy/custom positions actually in use
     const used = new Set(getPlayers().map(p => p.position).filter(Boolean));
-    COMMON_POSITIONS.forEach(p => used.add(p));
-    const opts = [...used].sort((a, b) => a.localeCompare(b))
-      .map(p => `<option value="${escapeHtml(p)}" ${p === filterPosition ? 'selected' : ''}>${escapeHtml(p)}</option>`)
+    POSITION_CODES.forEach(p => used.add(p));
+    const opts = [...used]
+      .sort((a, b) => (POSITION_LABELS[a] || a).localeCompare(POSITION_LABELS[b] || b))
+      .map(p => `<option value="${escapeHtml(p)}" ${p === filterPosition ? 'selected' : ''}>${escapeHtml(POSITION_LABELS[p] || p)}</option>`)
       .join('');
     posSel.innerHTML = `<option value="">Any</option>${opts}`;
   }
@@ -146,8 +172,8 @@ export function mount(container) {
               <button class="star-btn" title="Mark as my player">${p.id === myId ? '★' : '☆'}</button></div>
             <div class="field-row"><label>Position</label>
               ${isEditing
-                ? `<input class="f-position" value="${escapeHtml(p.position)}" list="position-list" />`
-                : `<span>${escapeHtml(p.position) || '—'}</span>`}</div>
+                ? `<select class="f-position">${positionOptionsHtml(p.position)}</select>`
+                : `<span>${escapeHtml(POSITION_LABELS[p.position] || p.position) || '—'}</span>`}</div>
             <div class="field-row"><label>Active</label>
               ${isEditing
                 ? `<input type="checkbox" class="f-active" ${p.active ? 'checked' : ''} />`
