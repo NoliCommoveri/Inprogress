@@ -4,12 +4,11 @@ import {
   exportBackup, importBackup, getData, backupNudgeDue
 } from '../data.js';
 import { exportRangeToXlsx, exportRangeToPdf, getEventsInRange } from '../export.js';
-
-function isoDate(d) { return d.toISOString().slice(0, 10); }
+import { todayStr, addDaysStr } from '../selectors.js';
 
 export function mount(container) {
-  const today = new Date();
-  const in30 = new Date(today.getTime() + 30 * 86400000);
+  const today = todayStr();
+  const in30 = addDaysStr(today, 30);
 
   container.innerHTML = `
     <h2>Settings</h2>
@@ -34,8 +33,8 @@ export function mount(container) {
 
     <section class="export-section">
       <h3>Export Schedule</h3>
-      <label>From <input type="date" id="export-start" value="${isoDate(today)}" /></label>
-      <label>To <input type="date" id="export-end" value="${isoDate(in30)}" /></label>
+      <label>From <input type="date" id="export-start" value="${today}" /></label>
+      <label>To <input type="date" id="export-end" value="${in30}" /></label>
       <br/>
       <button id="export-xlsx-btn">Download Excel</button>
       <button id="export-pdf-btn">Download PDF</button>

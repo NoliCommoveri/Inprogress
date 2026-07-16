@@ -7,6 +7,7 @@ import {
   subscribe
 } from '../data.js';
 import { escapeHtml, dollarsToCents } from '../util.js';
+import { todayStr } from '../selectors.js';
 
 export function mount(container) {
   container.innerHTML = `
@@ -84,7 +85,7 @@ export function mount(container) {
       if (confirm('Delete this fundraiser and all its occurrences?')) deleteFundraiser(fid);
     }
     if (e.target.classList.contains('add-occ-btn')) {
-      const today = new Date().toISOString().slice(0, 10);
+      const today = todayStr();
       addFundraiserOccurrence({ fundraiserId: fid, startDate: today, endDate: today });
     }
     if (e.target.classList.contains('delete-occ-btn')) {

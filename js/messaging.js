@@ -3,6 +3,7 @@ import {
   getEvents, getSnackAssignmentsForEvent, getParentById,
   getOpponentById, getParents
 } from './data.js';
+import { todayStr, addDaysStr } from './selectors.js';
 
 function fmtDate(dateStr) {
   return new Date(dateStr + 'T00:00')
@@ -11,8 +12,8 @@ function fmtDate(dateStr) {
 
 // Plain-text digest of upcoming events + snack assignments, default 7 days out.
 export function buildWeeklyUpdateText(daysAhead = 7) {
-  const today = new Date().toISOString().slice(0, 10);
-  const endDate = new Date(Date.now() + daysAhead * 864e5).toISOString().slice(0, 10);
+  const today = todayStr();
+  const endDate = addDaysStr(today, daysAhead);
 
   const upcoming = getEvents()
     .filter(e => e.date >= today && e.date <= endDate && e.status !== 'canceled')

@@ -2,18 +2,29 @@
 // persistence; data.js stays the only file that touches localStorage.
 import { getData } from './data.js';
 
-// Dates are 'YYYY-MM-DD' strings compared lexicographically. Build this from
-// the Date object's *local* calendar fields, not toISOString() (which is UTC):
+// Dates are 'YYYY-MM-DD' strings compared lexicographically. Build these from
+// a Date object's *local* calendar fields, not toISOString() (which is UTC):
 // for any timezone west of UTC, toISOString() rolls over to tomorrow's date
 // once local time passes ~evening, which wrongly flagged today's still-
-// upcoming events as past/stale.
-export const todayStr = () => {
-  const d = new Date();
+// upcoming events as past/stale. This is the one shared source for "today" —
+// other modules should import todayStr()/addDaysStr() rather than keep their
+// own inline copy.
+function formatLocalDate(d) {
   const y = d.getFullYear();
   const m = String(d.getMonth() + 1).padStart(2, '0');
   const day = String(d.getDate()).padStart(2, '0');
   return `${y}-${m}-${day}`;
-};
+}
+
+export const todayStr = () => formatLocalDate(new Date());
+
+// Add N days to a 'YYYY-MM-DD' string, using calendar (not millisecond) math
+// so it can't land on the wrong date across a DST transition.
+export function addDaysStr(dateStr, days) {
+  const d = new Date(dateStr + 'T00:00');
+  d.setDate(d.getDate() + days);
+  return formatLocalDate(d);
+}
 
 // --- Win / Loss / Tie record: completed games with both scores set ---
 export function getTeamRecord() {

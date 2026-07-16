@@ -6,6 +6,7 @@ import {
   getParents, getParentById, subscribe
 } from '../data.js';
 import { escapeHtml } from '../util.js';
+import { todayStr } from '../selectors.js';
 
 export function mount(container) {
   container.innerHTML = `
@@ -21,7 +22,7 @@ export function mount(container) {
   const expandedIds = new Set();
 
   function render() {
-    const today = new Date().toISOString().slice(0, 10);
+    const today = todayStr();
     const practices = getEvents()
       .filter(e => e.type === 'practice')
       .sort((a, b) => a.date === b.date
