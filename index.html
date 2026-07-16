@@ -31,6 +31,7 @@
   <div id="nudge-banner" hidden></div>
   <div id="hygiene-banner" hidden></div>
   <main id="outlet">Loading…</main>
+  <dialog id="wizard-dialog" class="wizard-dialog"></dialog>
 
   <script src="./js/vendor/xlsx.full.min.js"></script>
   <script src="./js/vendor/jspdf.umd.min.js"></script>
@@ -39,11 +40,13 @@
     import { initRouter } from './js/router.js';
     import { initNudgeBanner } from './js/nudge.js';
     import { initHygieneBanner } from './js/hygiene.js';
+    import { initWizard } from './js/wizard.js';
 
     seedIfNeeded();
     initRouter(document.getElementById('outlet'), document.getElementById('main-nav'));
     initNudgeBanner(document.getElementById('nudge-banner'));
     initHygieneBanner(document.getElementById('hygiene-banner'));
+    initWizard(document.getElementById('wizard-dialog'));
 
     if ('serviceWorker' in navigator) {
       navigator.serviceWorker.register('./sw.js');

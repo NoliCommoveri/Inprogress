@@ -21,7 +21,7 @@ function emptyData() {
   return {
     schemaVersion: SCHEMA_VERSION,
     meta: { lastModifiedAt: null, lastBackupAt: null, changesSinceBackup: 0 },
-    settings: { teamName: '', season: '', myPlayerId: null },
+    settings: { teamName: '', season: '', myPlayerId: null, hasSeenWizard: false },
     players: [], parents: [], playerParents: [], opponents: [],
     events: [], snackAssignments: [],
     fundraiserPlatforms: [], fundraisers: [], fundraiserOccurrences: []
@@ -309,6 +309,16 @@ export async function importBackup(file) {
   const migrated = migrate(parsed);   // shape + meta now guaranteed present
   _cache = migrated;
   saveData({ countAsChange: false });
+}
+
+// ---------- Hard reset (Settings' Danger Zone) ----------
+// Wipes the store on this origin entirely. Deliberately does not notify
+// subscribers or attempt any in-place re-render — the caller reloads the
+// page so every module (seed.js, wizard.js, all views) reinitializes from
+// nothing, the same as a genuinely fresh browser.
+export function hardResetAllData() {
+  localStorage.removeItem(STORAGE_KEY);
+  _cache = null;
 }
 
 export function backupNudgeDue() {

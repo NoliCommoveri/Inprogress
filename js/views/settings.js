@@ -1,10 +1,13 @@
 // settings.js — team name/season, backup/restore, date-range export.
 import {
   getSettings, updateSettings, subscribe,
-  exportBackup, importBackup, getData, backupNudgeDue
+  exportBackup, importBackup, getData, backupNudgeDue, hardResetAllData
 } from '../data.js';
 import { exportRangeToXlsx, exportRangeToPdf, getEventsInRange } from '../export.js';
 import { todayStr, addDaysStr } from '../selectors.js';
+import { openWizard } from '../wizard.js';
+
+const RESET_CONFIRM_WORD = 'RESET';
 
 export function mount(container) {
   const today = todayStr();
@@ -73,6 +76,27 @@ export function mount(container) {
         <p>The short version: <strong>export a backup regularly</strong>, and on
            iPhone, install it to your Home Screen and stick to that one copy.</p>
       </details>
+      <button type="button" id="replay-wizard-btn" class="btn-link">▶ Replay the Getting Started tour</button>
+    </section>
+
+    <section class="danger-zone">
+      <h3>⚠️ Danger Zone</h3>
+      <p>Permanently erase <strong>all</strong> data on this device — every
+         player, parent, event, snack assignment, and fundraiser. This
+         cannot be undone, and there is no cloud copy to recover from.
+         Export a backup first if there's any chance you'll want this data
+         again.</p>
+      <button type="button" id="reveal-reset-btn" class="btn-secondary">Reset All Data…</button>
+      <div id="reset-confirm-panel" hidden>
+        <p>Type <strong>${RESET_CONFIRM_WORD}</strong> below to confirm. The
+           app will reload completely empty right after.</p>
+        <input type="text" id="reset-confirm-input" autocomplete="off"
+               placeholder="Type ${RESET_CONFIRM_WORD} to confirm" />
+        <div class="danger-zone-actions">
+          <button type="button" id="cancel-reset-btn" class="btn-secondary">Cancel</button>
+          <button type="button" id="confirm-reset-btn" class="btn-danger" disabled>Erase everything</button>
+        </div>
+      </div>
     </section>
   `;
 
@@ -87,6 +111,13 @@ export function mount(container) {
   const xlsxBtn = container.querySelector('#export-xlsx-btn');
   const pdfBtn = container.querySelector('#export-pdf-btn');
   const emptyMsg = container.querySelector('#export-empty-msg');
+  const replayWizardBtn = container.querySelector('#replay-wizard-btn');
+
+  const revealResetBtn = container.querySelector('#reveal-reset-btn');
+  const resetPanel = container.querySelector('#reset-confirm-panel');
+  const resetInput = container.querySelector('#reset-confirm-input');
+  const cancelResetBtn = container.querySelector('#cancel-reset-btn');
+  const confirmResetBtn = container.querySelector('#confirm-reset-btn');
 
   function render() {
     const s = getSettings();
@@ -132,6 +163,31 @@ export function mount(container) {
       }
     }
     importInput.value = '';
+  });
+
+  replayWizardBtn.addEventListener('click', () => openWizard());
+
+  revealResetBtn.addEventListener('click', () => {
+    revealResetBtn.hidden = true;
+    resetPanel.hidden = false;
+    resetInput.value = '';
+    confirmResetBtn.disabled = true;
+    resetInput.focus();
+  });
+  cancelResetBtn.addEventListener('click', () => {
+    resetPanel.hidden = true;
+    revealResetBtn.hidden = false;
+  });
+  resetInput.addEventListener('input', () => {
+    confirmResetBtn.disabled = resetInput.value !== RESET_CONFIRM_WORD;
+  });
+  resetInput.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter' && !confirmResetBtn.disabled) confirmResetBtn.click();
+  });
+  confirmResetBtn.addEventListener('click', () => {
+    if (resetInput.value !== RESET_CONFIRM_WORD) return;
+    hardResetAllData();
+    window.location.reload();
   });
 
   startInput.addEventListener('change', updateExportButtons);

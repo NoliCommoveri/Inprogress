@@ -5,9 +5,10 @@
 import { isFirstRun, loadData, addFundraiserPlatform } from './data.js';
 
 export function seedIfNeeded() {
-  if (!isFirstRun()) return;
+  if (!isFirstRun()) return false;
   loadData();
   addFundraiserPlatform({ name: 'DoubleGood' });
   addFundraiserPlatform({ name: 'GoFundMe' });
   addFundraiserPlatform({ name: 'Snap! Raise' });
+  return true;
 }
