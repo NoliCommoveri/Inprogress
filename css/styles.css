@@ -337,6 +337,21 @@ dialog form input, dialog form select {
   background: #eef1f4;
 }
 
+/* Get as App (settings) */
+.get-app-btn {
+  display: block;
+  margin: 0 0 var(--gap);
+}
+.get-app-dialog {
+  width: min(92vw, 420px);
+}
+.get-app-choices {
+  justify-content: center;
+}
+.get-app-choices .btn-primary {
+  flex: 1;
+}
+
 /* Compact roster/parents/schedule/snacks columns + expandable rows */
 .roster-table th, .roster-table td,
 .parents-table th, .parents-table td,

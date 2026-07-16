@@ -15,6 +15,12 @@ export function mount(container) {
 
   container.innerHTML = `
     <h2>Settings</h2>
+    <button type="button" id="get-app-btn" class="btn-secondary get-app-btn">📲 Get as App</button>
+
+    <dialog id="get-app-dialog" class="get-app-dialog">
+      <div id="get-app-content"></div>
+    </dialog>
+
     <section>
       <label>Team name: <input id="team-name" /></label><br/>
       <label>Season: <input id="season" /></label>
@@ -113,6 +119,10 @@ export function mount(container) {
   const emptyMsg = container.querySelector('#export-empty-msg');
   const replayWizardBtn = container.querySelector('#replay-wizard-btn');
 
+  const getAppBtn = container.querySelector('#get-app-btn');
+  const getAppDialog = container.querySelector('#get-app-dialog');
+  const getAppContent = container.querySelector('#get-app-content');
+
   const revealResetBtn = container.querySelector('#reveal-reset-btn');
   const resetPanel = container.querySelector('#reset-confirm-panel');
   const resetInput = container.querySelector('#reset-confirm-input');
@@ -166,6 +176,68 @@ export function mount(container) {
   });
 
   replayWizardBtn.addEventListener('click', () => openWizard());
+
+  function renderGetAppStep(step) {
+    if (step === 'choose') {
+      getAppContent.innerHTML = `
+        <h3>Get as App</h3>
+        <p>Which phone are you using?</p>
+        <div class="modal-actions get-app-choices">
+          <button type="button" class="btn-primary" data-step="iphone">📱 iPhone</button>
+          <button type="button" class="btn-primary" data-step="android">🤖 Android</button>
+        </div>
+        <div class="modal-actions">
+          <button type="button" class="cancel-btn" data-action="close">Cancel</button>
+        </div>
+      `;
+    } else if (step === 'iphone') {
+      getAppContent.innerHTML = `
+        <h3>Install on iPhone</h3>
+        <ol>
+          <li>Open this page in <strong>Safari</strong> — Chrome and other browsers on
+              iPhone can't install it.</li>
+          <li>Tap the <strong>Share</strong> icon (square with an arrow up) in the
+              toolbar.</li>
+          <li>Scroll down and tap <strong>Add to Home Screen</strong>.</li>
+          <li>Tap <strong>Add</strong> in the top right.</li>
+        </ol>
+        <p>The app icon appears on your Home Screen. Open it from there — it runs
+           full-screen, with no browser address bar.</p>
+        <div class="modal-actions">
+          <button type="button" class="cancel-btn" data-step="choose">← Back</button>
+          <button type="button" data-action="close">Done</button>
+        </div>
+      `;
+    } else if (step === 'android') {
+      getAppContent.innerHTML = `
+        <h3>Install on Android</h3>
+        <ol>
+          <li>Open this page in <strong>Chrome</strong>.</li>
+          <li>Tap the <strong>⋮</strong> menu in the top right.</li>
+          <li>Tap <strong>Add to Home screen</strong> (or <strong>Install app</strong>,
+              if Chrome offers that directly).</li>
+          <li>Tap <strong>Add</strong> / <strong>Install</strong> to confirm.</li>
+        </ol>
+        <p>The app icon appears on your Home Screen / app drawer and opens
+           full-screen.</p>
+        <div class="modal-actions">
+          <button type="button" class="cancel-btn" data-step="choose">← Back</button>
+          <button type="button" data-action="close">Done</button>
+        </div>
+      `;
+    }
+  }
+
+  getAppBtn.addEventListener('click', () => {
+    renderGetAppStep('choose');
+    getAppDialog.showModal();
+  });
+
+  getAppDialog.addEventListener('click', (e) => {
+    const stepBtn = e.target.closest('[data-step]');
+    if (stepBtn) { renderGetAppStep(stepBtn.dataset.step); return; }
+    if (e.target.closest('[data-action="close"]')) getAppDialog.close();
+  });
 
   revealResetBtn.addEventListener('click', () => {
     revealResetBtn.hidden = true;
