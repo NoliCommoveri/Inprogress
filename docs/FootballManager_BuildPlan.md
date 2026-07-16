@@ -677,6 +677,47 @@ bumped precache list actually serves everything needed offline._
 
 ---
 
+## Stage 12 — Fundraiser Update messaging + Fundraiser report export
+
+Spec'd (not yet built) per
+`FootballManager_ClaudeCode_Stage12-FundraiserComms.md` — read that doc
+before starting; it carries the locked design decisions (two separate
+messages, not one; "active" = not `completed`/`canceled`; days-remaining
+derived from the latest occurrence `endDate`, no schema change).
+
+- [ ] `js/selectors.js`: `daysBetweenStr(a, b)` calendar-day diff helper
+      (DST-safe, same idea as `addDaysStr`).
+- [ ] `js/messaging.js`: `getActiveFundraisersForUpdate()` (filter + derived
+      `remainingCents`/`pct`/`daysLeft`/`startsInDays`, stale ones excluded,
+      soonest-deadline-first), `buildFundraiserUpdateText({ parentName })`
+      (action-driving copy: purpose from `kind`, progress in cents-safe
+      dollars, urgency tiers, platform URL, in-person dates; greeting-only
+      personalization), `buildFundraiserSubject()`.
+- [ ] `js/views/communications.js`: "Fundraiser Update" broadcast section
+      (preview / Email All / Copy, mirroring Weekly Update incl. empty
+      states) + a Weekly/Fundraiser toggle above Parent Contacts that
+      switches per-parent link prefills — personalized greeting on the
+      fundraiser choice; no new table columns (UX review: mobile width).
+- [ ] `js/export.js`: `exportFundraisersToXlsx()` (Fundraisers +
+      Occurrences sheets, all statuses, active-first) and
+      `exportFundraisersToPdf(teamName)` (active detail blocks + Completed
+      summary; canceled xlsx-only) — derivations shared with messaging,
+      not re-implemented. Parity fix: range PDF gains the overlapping-
+      occurrences fundraiser section the range xlsx already has.
+- [ ] `js/views/settings.js`: "Fundraiser Report" .xlsx/.pdf buttons under
+      the date-range export controls.
+- [ ] `sw.js`: `CACHE_NAME` bump `stm-shell-v8` → `v9` in the shipping
+      commit (all touched files are precached shell files).
+
+**Gate:** the fixture matrix + checklist at the end of the Stage 12 doc —
+message correctness across the status/date edge cases (stale/completed/
+canceled excluded, ends-today/starts-later/no-occurrence/goal-0/goal-met
+phrasing), personalized per-parent links via the toggle, both report files
+correct, range xlsx unchanged, `SCHEMA_VERSION` untouched, no console
+errors, no horizontal overflow at 340px.
+
+---
+
 ## Deferred (explicitly out of scope — §10)
 
 - [ ] Backend swap (Firebase/Supabase) — would repoint only `loadData()`/
