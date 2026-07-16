@@ -271,7 +271,8 @@ button:hover { background: var(--color-primary-dark); }
   font-weight: 600;
 }
 
-.import-label { display: inline-flex; align-items: center; gap: 6px; }
+.import-label { display: inline-flex; flex-wrap: wrap; align-items: center; gap: 6px; max-width: 100%; }
+.import-label input[type="file"] { max-width: 100%; }
 
 button:disabled {
   opacity: 0.5;

@@ -6,7 +6,7 @@ import {
   getFundraiserPlatforms, addFundraiserPlatform,
   subscribe
 } from '../data.js';
-import { escapeHtml, dollarsToCents } from '../util.js';
+import { escapeHtml, centsToDollarsStr, dollarsToCents } from '../util.js';
 import { todayStr } from '../selectors.js';
 
 export function mount(container) {
@@ -30,6 +30,18 @@ export function mount(container) {
       <h3>Completed</h3>
       <div id="fundraisers-completed"></div>
     </section>
+
+    <dialog id="platform-dialog">
+      <h3>New Platform</h3>
+      <form id="platform-form">
+        <input name="name" placeholder="Platform name" required />
+        <input name="url" placeholder="URL (optional)" />
+        <div class="modal-actions">
+          <button type="button" class="cancel-btn" id="platform-cancel-btn">Cancel</button>
+          <button type="submit">Add Platform</button>
+        </div>
+      </form>
+    </dialog>
   `;
 
   const list = container.querySelector('#fundraisers-list');
@@ -62,7 +74,7 @@ export function mount(container) {
           ${['planned', 'active', 'completed', 'canceled'].map(s =>
             `<option value="${s}" ${f.status === s ? 'selected' : ''}>${s}</option>`).join('')}
         </select>
-      ` : `<span class="f-status-display">${f.status}</span>`}
+      ` : `<span class="f-status-display">${escapeHtml(f.status)}</span>`}
       <span>Platform:
         ${isEditing ? `
           <select class="f-platform">
@@ -72,10 +84,10 @@ export function mount(container) {
         ` : `<span class="f-platform-display">${platform ? escapeHtml(platform.name) : 'In person'}</span>`}
       </span>
       <div class="progress-bar"><div class="progress-fill" style="width:${pct}%"></div></div>
-      Raised $<input class="f-raised" type="number" step="0.01" value="${(f.raisedAmountCents / 100).toFixed(2)}" size="8" />
+      Raised $<input class="f-raised" type="number" step="0.01" value="${centsToDollarsStr(f.raisedAmountCents)}" size="8" />
       / Goal $${isEditing
-        ? `<input class="f-goal" type="number" step="0.01" value="${(f.goalAmountCents / 100).toFixed(2)}" size="8" />`
-        : `<span class="f-goal-display">${(f.goalAmountCents / 100).toFixed(2)}</span>`}
+        ? `<input class="f-goal" type="number" step="0.01" value="${centsToDollarsStr(f.goalAmountCents)}" size="8" />`
+        : `<span class="f-goal-display">${centsToDollarsStr(f.goalAmountCents)}</span>`}
       (${pct}%)
       <button class="edit-toggle">${isEditing ? 'Done' : 'Edit'}</button>
       <button class="delete-fundraiser-btn">Delete Fundraiser</button>
@@ -107,7 +119,7 @@ export function mount(container) {
       <div class="fundraiser-summary-row">
         <button type="button" class="fundraiser-toggle expand-toggle" aria-expanded="${isExpanded}" title="${isExpanded ? 'Collapse' : 'Expand'}">${isExpanded ? '▾' : '▸'}</button>
         <span class="fundraiser-summary-name">${escapeHtml(f.name)}</span>
-        <span class="fundraiser-summary-stats">$${(f.raisedAmountCents / 100).toFixed(2)} / $${(f.goalAmountCents / 100).toFixed(2)} (${pct}%)</span>
+        <span class="fundraiser-summary-stats">$${centsToDollarsStr(f.raisedAmountCents)} / $${centsToDollarsStr(f.goalAmountCents)} (${pct}%)</span>
       </div>`;
     return `
       <div class="fundraiser-card fundraiser-completed ${isExpanded ? '' : 'fundraiser-collapsed'}" data-id="${f.id}">
@@ -176,11 +188,26 @@ export function mount(container) {
   list.addEventListener('change', onChange);
   completedList.addEventListener('change', onChange);
 
+  const platformDialog = container.querySelector('#platform-dialog');
+  const platformForm = container.querySelector('#platform-form');
+
   container.querySelector('#new-platform-btn').addEventListener('click', () => {
-    const name = prompt('Platform name?');
+    platformForm.reset();
+    platformDialog.showModal();
+  });
+
+  container.querySelector('#platform-cancel-btn').addEventListener('click', () => {
+    platformDialog.close();
+  });
+
+  platformForm.addEventListener('submit', (e) => {
+    e.preventDefault();
+    const fd = new FormData(platformForm);
+    const name = fd.get('name').trim();
     if (!name) return;
-    const url = prompt('URL (optional)?') || '';
+    const url = fd.get('url').trim();
     const platform = addFundraiserPlatform({ name, url });
+    platformDialog.close();
     renderPlatformOptions(platformSelect, platform.id);
   });
 

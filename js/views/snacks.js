@@ -45,8 +45,8 @@ export function mount(container) {
 
       return `
         <tr data-id="${e.id}" class="${unassigned ? 'unassigned-flag' : ''}">
-          <td class="col-date">${e.date}</td>
-          <td class="col-time">${e.startTime}</td>
+          <td class="col-date">${escapeHtml(e.date)}</td>
+          <td class="col-time">${escapeHtml(e.startTime)}</td>
           <td>${assignedList || (unassigned ? '⚠️ Unassigned' : '—')}</td>
           <td><button class="expand-toggle" aria-expanded="${isExpanded}" title="More fields">${isExpanded ? '▾' : '▸'}</button></td>
         </tr>
