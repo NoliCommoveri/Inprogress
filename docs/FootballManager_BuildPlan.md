@@ -655,6 +655,26 @@ empty store — `getPlayers().length === 0`, `settings.teamName === ''`,
 the wizard auto-opened again (confirms `hasSeenWizard` reset along with
 everything else). No console/page errors.
 
+**Bug fix — missed `sw.js` `CACHE_NAME` bump:** this stage's own commits
+modified several precached shell files (`js/views/roster.js`,
+`js/views/settings.js`, `css/styles.css`, `index.html`, `js/data.js`,
+`js/seed.js`) and added two new ones (`js/wizard.js`, `js/wizard-content.js`)
+without touching `sw.js` at all — a miss of the deploy convention this repo
+already documents (9.3/9.7, and Stage 10's own `v3`→`v4` bump). Under a
+service-worker-controlled session this meant the cache-first shell kept
+serving the pre-wizard `roster.js`/`settings.js`/etc., and the two new
+wizard modules were never precached (they'd still load fine online via the
+uncached-request path, just not offline). Fixed by bumping `CACHE_NAME`
+`stm-shell-v5` → `v6` (`v5` was the prior instance's bump for the
+position-dropdown change, PR #21) and adding `./js/wizard.js` +
+`./js/wizard-content.js` to `SHELL_FILES`.
+
+_Verified with Playwright: loaded the app fresh, confirmed the SW installs
+and activates the `stm-shell-v6` cache, confirmed both new wizard modules
+are actually present in that cache (`cache.match()`), then went offline and
+reloaded — the app hydrates fully (not stuck on "Loading…"), confirming the
+bumped precache list actually serves everything needed offline._
+
 ---
 
 ## Deferred (explicitly out of scope — §10)
