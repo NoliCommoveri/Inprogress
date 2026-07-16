@@ -62,7 +62,7 @@ export function mount(container) {
           ${['planned', 'active', 'completed', 'canceled'].map(s =>
             `<option value="${s}" ${f.status === s ? 'selected' : ''}>${s}</option>`).join('')}
         </select>
-      ` : `<span class="f-status-display">${f.status}</span>`}
+      ` : `<span class="f-status-display">${escapeHtml(f.status)}</span>`}
       <span>Platform:
         ${isEditing ? `
           <select class="f-platform">

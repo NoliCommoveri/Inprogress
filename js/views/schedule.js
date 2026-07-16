@@ -97,7 +97,7 @@ export function mount(container) {
           ` : `
             <td>${stale ? '⚠️ ' : ''}${escapeHtml(e.date)}</td>
             <td>${escapeHtml(e.startTime)}</td>
-            <td>${TYPE_LABEL[e.type] || e.type}</td>
+            <td>${TYPE_LABEL[e.type] || escapeHtml(e.type)}</td>
           `}
           <td><button class="expand-toggle" aria-expanded="${isExpanded}" title="More fields">${isExpanded ? '▾' : '▸'}</button></td>
         </tr>
@@ -123,7 +123,7 @@ export function mount(container) {
                   <option value="scheduled" ${e.status === 'scheduled' ? 'selected' : ''}>Scheduled</option>
                   <option value="canceled" ${e.status === 'canceled' ? 'selected' : ''}>Canceled</option>
                   <option value="completed" ${e.status === 'completed' ? 'selected' : ''}>Completed</option>
-                </select>` : `<span>${STATUS_LABEL[e.status] || e.status}</span>`}</div>
+                </select>` : `<span>${STATUS_LABEL[e.status] || escapeHtml(e.status)}</span>`}</div>
               ${isGame && e.status === 'completed' ? `
                 <div class="field-row"><label>Score</label>
                   ${isEditing ? `

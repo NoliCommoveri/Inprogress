@@ -1,8 +1,29 @@
 # Pre-Distribution Audit — 2026-07-16, commit 37a7a76
 
+## Resolution (applied 2026-07-16, follow-up commit)
+
+The BLOCKER and all four SHOULD-FIX findings below have since been **fixed and
+re-verified** — the full Phase 4 smoke test plus the XSS and v2→v3 migration
+probes now pass (18/18, zero console/page errors):
+
+- **BLOCKER XSS** — the five sinks now pass through `escapeHtml()`; crafted
+  `<img onerror>` payloads no longer execute in Fundraisers, Snacks, or
+  Schedule.
+- **`saveData()` write guard** — `setItem` is wrapped; a quota/Private-mode
+  failure now raises a one-time visible warning instead of failing silently.
+- **Schema drift** — `SCHEMA_VERSION` bumped to 3 with a `migrate()` branch
+  that defaults `hasSeenWizard` (`true` for pre-existing stores); `migrate()`
+  also now defends a hand-built file missing `meta`/`settings`.
+- **Settings mobile overflow** — the file input is constrained; the 320–390px
+  sweep is clean.
+- `sw.js` `CACHE_NAME` bumped `v8` → `v9` for the changed cached files.
+
+The findings below are preserved as the original audit record of commit
+37a7a76.
+
 ## Verdict
 
-**DO NOT SHIP** until the one BLOCKER is fixed. A crafted backup file can inject
+*(Original audit verdict, pre-fix.)* **DO NOT SHIP** until the one BLOCKER is fixed. A crafted backup file can inject
 executing HTML into several views when it is imported. Everything else is
 sound: the data model, offline story, export, PII warnings, and invariants
 I-1/I-2/I-4/I-5/I-6/I-7/I-9/I-10 all hold. Fix the XSS on the import path,

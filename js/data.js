@@ -1,10 +1,11 @@
 // data.js — the only file allowed to call localStorage.
 
 const STORAGE_KEY = 'stm:v1';
-const SCHEMA_VERSION = 2;
+const SCHEMA_VERSION = 3;
 
 let _cache = null;
 const _subs = new Set(); // () => void, called after an external (cross-tab) change
+let _saveFailureWarned = false; // one warning per session — don't spam on every keystroke
 
 // ---------- UUID ----------
 export function uuid() {
@@ -30,11 +31,22 @@ function emptyData() {
 
 // ---------- Migration ----------
 function migrate(data) {
+  // Defend against a hand-built older file missing these containers before any
+  // branch reads into them (§I-8 allows hand-built v1 files).
+  data.meta ??= { lastModifiedAt: null, lastBackupAt: null, changesSinceBackup: 0 };
+  data.settings ??= {};
   if (data.schemaVersion < 2) {
     data.meta.changesSinceBackup = data.meta.changesSinceBackup ?? 0;
     data.schemaVersion = 2;
   }
-  // Pass-through at schemaVersion 2. Next migration branches here. Every
+  if (data.schemaVersion < 3) {
+    // Stage 11 added settings.hasSeenWizard. Default pre-existing stores to
+    // `true` so long-time users aren't shown the first-run wizard on upgrade;
+    // genuinely fresh stores get `false` from emptyData() and auto-open it.
+    data.settings.hasSeenWizard = data.settings.hasSeenWizard ?? true;
+    data.schemaVersion = 3;
+  }
+  // Pass-through at schemaVersion 3. Next migration branches here. Every
   // load path (loadData, the storage listener, importBackup) routes
   // through this.
   return data;
@@ -63,7 +75,28 @@ export function saveData({ countAsChange = true } = {}) {
   if (countAsChange) {
     _cache.meta.changesSinceBackup = (_cache.meta.changesSinceBackup || 0) + 1;
   }
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(_cache));
+  // localStorage.setItem throws on a full quota and in Safari/iOS Private mode
+  // (where every write fails). Never let that be silent: the in-memory _cache
+  // still holds the edit so the app stays usable this session, but the change
+  // did NOT reach disk and will vanish on reload. Warn loudly, once, so the
+  // admin can export a backup or switch out of Private mode. Rethrowing here
+  // would break each caller's event handler for no gain — the warning is the
+  // signal callers need.
+  try {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(_cache));
+  } catch (err) {
+    if (!_saveFailureWarned && typeof alert === 'function') {
+      _saveFailureWarned = true;
+      alert(
+        "This browser isn't saving your data — it may be full, or you're in a " +
+        "Private/Incognito window. Your changes will be LOST when you close the " +
+        "app. Export a backup now and switch to a normal window."
+      );
+    }
+    _subs.forEach(fn => fn());
+    return;
+  }
+  _saveFailureWarned = false; // a write succeeded — re-arm the warning
   _subs.forEach(fn => fn());
 }
 
