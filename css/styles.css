@@ -415,6 +415,14 @@ dialog form input, dialog form select {
   min-width: 0;
 }
 
+.expand-grid .field-row .f-score-us,
+.expand-grid .field-row .f-score-opp {
+  flex: 0 0 4ch;
+  width: 4ch;
+  padding: 5px 6px;
+  text-align: center;
+}
+
 .linked-child {
   display: inline-flex;
   align-items: center;

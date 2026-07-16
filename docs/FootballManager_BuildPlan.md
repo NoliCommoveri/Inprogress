@@ -501,6 +501,37 @@ render" gate bullet — not exercised directly, but it falls out of the same
 risk is low. Real-device/offline hardware verification remains owed from
 Stage 9.6/9.7, unchanged by this stage.
 
+**Post-merge bug fix:** `selectors.js`'s `todayStr()` originally computed
+"today" via `new Date().toISOString().slice(0, 10)` — UTC, not the browser's
+local calendar date. For any timezone west of UTC (all of the Americas), once
+local time passes into evening, `toISOString()` has already rolled to
+tomorrow's UTC date, so `todayStr()` returned a date one day ahead of the real
+local day. That flagged today's still-upcoming events (e.g. a 9pm practice
+that hadn't happened yet) as past/stale — the Team View's Needs Attention
+list, the hygiene banner, and the Schedule's Past section all inherited this.
+Fixed `todayStr()` to build the string from the `Date` object's local
+`getFullYear`/`getMonth`/`getDate` fields instead. Reproduced with Playwright
+using a `America/Los_Angeles` context clocked to 10pm local (`2026-07-15T22:00
+-07:00`, i.e. `2026-07-16T05:00Z`): before the fix, a practice dated
+`2026-07-15` was wrongly returned by `getStaleEvents()`; after the fix, it
+correctly is not. Full Stage 10 regression suite re-run clean afterward.
+**Follow-up:** `snacks.js`, `messaging.js`, `fundraisers.js`, and `settings.js`
+each had their own separately-inlined `new Date().toISOString().slice(0, 10)`
+for "today," sharing the identical UTC/local mismatch (unassigned-snack
+flagging, the weekly digest's date window, the new-occurrence default date,
+and the export date-range defaults, respectively). Repointed all four at
+`selectors.js`'s `todayStr()` — now the single source for "today" app-wide —
+and added `addDaysStr(dateStr, days)` to `selectors.js` (calendar-based via
+`setDate()`, not millisecond arithmetic, so it can't land on the wrong date
+across a DST transition) for `messaging.js`'s 7-day digest window and
+`settings.js`'s default 30-day export range. `settings.js`'s local `isoDate()`
+helper was removed as now-unused. Verified with the same `America/Los_Angeles`
+10pm-local clock: a today's-evening practice now correctly shows as upcoming
+in Snacks and the weekly digest, a new fundraiser occurrence defaults to the
+correct local date, and the Settings export range defaults to
+today/today+30 in local dates. Stage 10 regression suite re-run clean
+afterward.
+
 ---
 
 ## Deferred (explicitly out of scope — §10)
