@@ -532,6 +532,23 @@ correct local date, and the Settings export range defaults to
 today/today+30 in local dates. Stage 10 regression suite re-run clean
 afterward.
 
+**Post-merge enhancement:** marking a game or fundraiser completed with no
+final score / raised amount recorded now prompts for it via `window.prompt`
+(new `promptGameScore()`/`promptRaisedAmountCents()` in `util.js`) instead of
+silently completing with the value left blank. Wired into all three
+completion paths: Team View's Needs Attention "Mark completed" buttons (where
+this mattered most — score/raised fields aren't shown in that list at all),
+and the status dropdowns in `schedule.js` and `fundraisers.js`. Canceling the
+prompt, or entering a score that doesn't match `<int>-<int>`, aborts the
+completion (status left unchanged, dropdown reverted) rather than completing
+with a bad or missing value; practices don't prompt since they have no score.
+Removed the now-redundant "Enter result" button/navigate-to-Schedule path on
+Team View, since "Mark completed" now captures the score inline. Verified
+with Playwright against seeded stale data: score/raised prompts appear and
+apply correctly from all three surfaces, canceling leaves status untouched,
+an invalid score format alerts and aborts, and practices complete with no
+prompt.
+
 ---
 
 ## Stage 11 — Getting Started wizard

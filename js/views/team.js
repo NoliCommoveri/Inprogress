@@ -1,10 +1,12 @@
 // team.js — landing dashboard: season record, next game/practice, hygiene.
-import { getSettings, getOpponentById, updateEvent, updateFundraiser, subscribe }
-  from '../data.js';
+import {
+  getSettings, getOpponentById, getEventById, getFundraiserById,
+  updateEvent, updateFundraiser, subscribe
+} from '../data.js';
 import {
   getTeamRecord, getNextEventOfType, getStaleEvents, getStaleFundraisers
 } from '../selectors.js';
-import { escapeHtml } from '../util.js';
+import { escapeHtml, promptGameScore, promptRaisedAmountCents } from '../util.js';
 
 function fmtDate(d) {
   return new Date(d + 'T00:00')
@@ -99,8 +101,6 @@ export function mount(container) {
       return `
         <div class="attn-row" data-kind="event" data-id="${e.id}" data-type="${e.type}">
           <span>${fmtDate(e.date)} · ${label} — still marked scheduled.</span>
-          ${e.type === 'game'
-            ? `<button class="attn-result-btn">Enter result</button>` : ''}
           <button class="attn-complete-btn">Mark completed</button>
           <button class="attn-cancel-btn">Mark canceled</button>
         </div>`;
@@ -122,19 +122,34 @@ export function mount(container) {
     const id = row.dataset.id;
 
     if (row.dataset.kind === 'event') {
-      if (e.target.classList.contains('attn-complete-btn'))
-        updateEvent(id, { status: 'completed' });
+      if (e.target.classList.contains('attn-complete-btn')) {
+        const ev = getEventById(id);
+        const needsScore = ev && ev.type === 'game'
+          && (ev.finalScoreUs == null || ev.finalScoreOpponent == null);
+        if (needsScore) {
+          const opp = ev.opponentId ? getOpponentById(ev.opponentId) : null;
+          const result = promptGameScore(opp ? opp.name : '');
+          if (!result) return;
+          updateEvent(id, { status: 'completed', ...result });
+        } else {
+          updateEvent(id, { status: 'completed' });
+        }
+      }
       if (e.target.classList.contains('attn-cancel-btn'))
         updateEvent(id, { status: 'canceled' });
-      if (e.target.classList.contains('attn-result-btn')) {
-        updateEvent(id, { status: 'completed' });
-        window.location.hash = '#/schedule';
-      }
     }
 
     if (row.dataset.kind === 'fundraiser') {
-      if (e.target.classList.contains('attn-fund-complete-btn'))
-        updateFundraiser(id, { status: 'completed' });
+      if (e.target.classList.contains('attn-fund-complete-btn')) {
+        const f = getFundraiserById(id);
+        if (f && !f.raisedAmountCents) {
+          const cents = promptRaisedAmountCents(f.name);
+          if (cents === null) return;
+          updateFundraiser(id, { status: 'completed', raisedAmountCents: cents });
+        } else {
+          updateFundraiser(id, { status: 'completed' });
+        }
+      }
       if (e.target.classList.contains('attn-fund-cancel-btn'))
         updateFundraiser(id, { status: 'canceled' });
     }

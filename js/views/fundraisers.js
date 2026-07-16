@@ -6,7 +6,7 @@ import {
   getFundraiserPlatforms, addFundraiserPlatform,
   subscribe
 } from '../data.js';
-import { escapeHtml, dollarsToCents } from '../util.js';
+import { escapeHtml, dollarsToCents, promptRaisedAmountCents } from '../util.js';
 import { todayStr } from '../selectors.js';
 
 export function mount(container) {
@@ -157,7 +157,17 @@ export function mount(container) {
     if (!card) return;
     const fid = card.dataset.id;
     if (e.target.classList.contains('f-name')) updateFundraiser(fid, { name: e.target.value });
-    if (e.target.classList.contains('f-status')) updateFundraiser(fid, { status: e.target.value });
+    if (e.target.classList.contains('f-status')) {
+      const value = e.target.value;
+      const f = getFundraisers().find(x => x.id === fid);
+      if (value === 'completed' && f && !f.raisedAmountCents) {
+        const cents = promptRaisedAmountCents(f.name);
+        if (cents === null) { e.target.value = f.status; return; }
+        updateFundraiser(fid, { status: value, raisedAmountCents: cents });
+        return;
+      }
+      updateFundraiser(fid, { status: value });
+    }
     if (e.target.classList.contains('f-platform')) updateFundraiser(fid, { platformId: e.target.value || null });
     if (e.target.classList.contains('f-raised')) updateFundraiser(fid, { raisedAmountCents: dollarsToCents(e.target.value) });
     if (e.target.classList.contains('f-goal')) updateFundraiser(fid, { goalAmountCents: dollarsToCents(e.target.value) });

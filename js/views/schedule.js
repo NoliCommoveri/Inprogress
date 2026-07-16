@@ -5,7 +5,7 @@ import {
   subscribe
 } from '../data.js';
 import { todayStr } from '../selectors.js';
-import { escapeHtml } from '../util.js';
+import { escapeHtml, promptGameScore } from '../util.js';
 
 const STATUS_LABEL = { scheduled: 'Scheduled', canceled: 'Canceled', completed: 'Completed' };
 const TYPE_LABEL = { practice: 'Practice', game: 'Game' };
@@ -187,7 +187,20 @@ export function mount(container) {
     if (e.target.classList.contains('f-type')) updateEvent(id, { type: e.target.value });
     if (e.target.classList.contains('f-opponent')) updateEvent(id, { opponentId: e.target.value || null });
     if (e.target.classList.contains('f-location')) updateEvent(id, { location: e.target.value });
-    if (e.target.classList.contains('f-status')) updateEvent(id, { status: e.target.value });
+    if (e.target.classList.contains('f-status')) {
+      const value = e.target.value;
+      const ev = getEvents().find(x => x.id === id);
+      const needsScore = value === 'completed' && ev && ev.type === 'game'
+        && (ev.finalScoreUs == null || ev.finalScoreOpponent == null);
+      if (needsScore) {
+        const opp = ev.opponentId ? getOpponentById(ev.opponentId) : null;
+        const result = promptGameScore(opp ? opp.name : '');
+        if (!result) { e.target.value = ev.status; return; }
+        updateEvent(id, { status: value, ...result });
+        return;
+      }
+      updateEvent(id, { status: value });
+    }
     if (e.target.classList.contains('f-score-us'))
       updateEvent(id, { finalScoreUs: e.target.value === '' ? null : Number(e.target.value) });
     if (e.target.classList.contains('f-score-opp'))
