@@ -37,6 +37,7 @@ export function mount(container) {
   const form = container.querySelector('#add-fundraiser-form');
   const platformSelect = container.querySelector('#platform-select');
   const expandedCompleted = new Set();
+  const editingIds = new Set();
 
   function renderPlatformOptions(select, selectedId = '') {
     const opts = getFundraiserPlatforms().map(p =>
@@ -45,36 +46,52 @@ export function mount(container) {
   }
 
   function cardBodyHtml(f) {
+    const isEditing = editingIds.has(f.id);
     const pct = f.goalAmountCents > 0
       ? Math.min(100, Math.round(100 * f.raisedAmountCents / f.goalAmountCents)) : 0;
     const occurrences = getFundraiserOccurrencesForFundraiser(f.id);
+    const platform = f.platformId
+      ? getFundraiserPlatforms().find(p => p.id === f.platformId) : null;
+
     return `
-      <input class="f-name" value="${escapeHtml(f.name)}" />
-      <select class="f-status">
-        ${['planned', 'active', 'completed', 'canceled'].map(s =>
-          `<option value="${s}" ${f.status === s ? 'selected' : ''}>${s}</option>`).join('')}
-      </select>
+      ${isEditing
+        ? `<input class="f-name" value="${escapeHtml(f.name)}" />`
+        : `<strong class="f-name-display">${escapeHtml(f.name)}</strong>`}
+      ${isEditing ? `
+        <select class="f-status">
+          ${['planned', 'active', 'completed', 'canceled'].map(s =>
+            `<option value="${s}" ${f.status === s ? 'selected' : ''}>${s}</option>`).join('')}
+        </select>
+      ` : `<span class="f-status-display">${f.status}</span>`}
       <span>Platform:
-        <select class="f-platform">
-          <option value="">— In person —</option>${
-            getFundraiserPlatforms().map(p => `<option value="${p.id}" ${p.id === f.platformId ? 'selected' : ''}>${escapeHtml(p.name)}</option>`).join('')
-          }</select>
+        ${isEditing ? `
+          <select class="f-platform">
+            <option value="">— In person —</option>${
+              getFundraiserPlatforms().map(p => `<option value="${p.id}" ${p.id === f.platformId ? 'selected' : ''}>${escapeHtml(p.name)}</option>`).join('')
+            }</select>
+        ` : `<span class="f-platform-display">${platform ? escapeHtml(platform.name) : 'In person'}</span>`}
       </span>
       <div class="progress-bar"><div class="progress-fill" style="width:${pct}%"></div></div>
       Raised $<input class="f-raised" type="number" step="0.01" value="${(f.raisedAmountCents / 100).toFixed(2)}" size="8" />
-      / Goal $<input class="f-goal" type="number" step="0.01" value="${(f.goalAmountCents / 100).toFixed(2)}" size="8" />
+      / Goal $${isEditing
+        ? `<input class="f-goal" type="number" step="0.01" value="${(f.goalAmountCents / 100).toFixed(2)}" size="8" />`
+        : `<span class="f-goal-display">${(f.goalAmountCents / 100).toFixed(2)}</span>`}
       (${pct}%)
+      <button class="edit-toggle">${isEditing ? 'Done' : 'Edit'}</button>
       <button class="delete-fundraiser-btn">Delete Fundraiser</button>
       <ul class="occurrence-list">
-        ${occurrences.map(o => `
+        ${occurrences.map(o => isEditing ? `
           <li data-occ="${o.id}">
             <input type="date" class="occ-start" value="${o.startDate}" />
             to <input type="date" class="occ-end" value="${o.endDate}" />
             <input class="occ-location" placeholder="Location" value="${escapeHtml(o.location)}" />
             <button class="delete-occ-btn">Remove</button>
+          </li>` : `
+          <li data-occ="${o.id}">
+            <span>${escapeHtml(o.startDate)} to ${escapeHtml(o.endDate)}${o.location ? ` · ${escapeHtml(o.location)}` : ''}</span>
           </li>`).join('')}
       </ul>
-      <button class="add-occ-btn">+ Add date/occurrence</button>
+      ${isEditing ? `<button class="add-occ-btn">+ Add date/occurrence</button>` : ''}
     `;
   }
 
@@ -115,6 +132,11 @@ export function mount(container) {
     const fid = card.dataset.id;
     if (e.target.classList.contains('fundraiser-toggle')) {
       if (expandedCompleted.has(fid)) expandedCompleted.delete(fid); else expandedCompleted.add(fid);
+      render();
+      return;
+    }
+    if (e.target.classList.contains('edit-toggle')) {
+      if (editingIds.has(fid)) editingIds.delete(fid); else editingIds.add(fid);
       render();
       return;
     }

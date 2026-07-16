@@ -245,6 +245,16 @@ button:hover { background: var(--color-primary-dark); }
   margin-bottom: 8px;
 }
 
+.f-name-display {
+  font-size: 1.05rem;
+  margin-right: 4px;
+}
+
+.f-status-display {
+  color: var(--color-text-muted);
+  text-transform: capitalize;
+}
+
 /* Settings / backup / export */
 .backup-section .warning,
 .export-section .warning {
