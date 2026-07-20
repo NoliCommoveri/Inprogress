@@ -6,9 +6,11 @@ import {
 } from '../data/sampleData.js';
 import { alertModal, confirmModal } from './ui.js';
 
-// Shown once, before anything else, when the browser has never made a choice.
-// Resolves 'seeded' | 'blank' | null (null = prompt wasn't offered at all) so
-// callers can chain the kennel-setup wizard onto the "blank" branch.
+// Shown after maybeOfferTourFirst() (wizardUI.js) is declined or finds nothing
+// to offer — never before it, so a genuinely fresh browser sees the tour offer
+// first (see app.js's firstRunFlow()). Resolves 'seeded' | 'blank' | null
+// (null = prompt wasn't offered at all) so callers can chain the kennel-setup
+// wizard onto the "blank" branch.
 export async function maybeShowFirstRunPrompt() {
   if (!(await shouldOfferFirstRunPrompt())) return null;
 
@@ -17,10 +19,9 @@ export async function maybeShowFirstRunPrompt() {
     overlay.className = 'modal-overlay';
     overlay.innerHTML = `
       <div class="modal" role="dialog" aria-modal="true" style="max-width:480px; text-align:center;">
-        <h2 style="margin-top:0;">🐾 Welcome to KennelOS</h2>
-        <p class="muted">This app is empty. Would you like to explore it with a small sample kennel
-          (dogs, contacts, a pedigree, and a health timeline already filled in), or start blank with
-          your own records?</p>
+        <h2 style="margin-top:0;">How would you like to start?</h2>
+        <p class="muted">Explore with a small sample kennel (dogs, contacts, a pedigree, and a
+          health timeline already filled in), or start blank with your own records?</p>
         <div class="form-actions" style="justify-content:center;">
           <button class="btn btn-primary" data-act="seed">Explore with sample data</button>
           <button class="btn" data-act="blank">Start with a blank kennel</button>

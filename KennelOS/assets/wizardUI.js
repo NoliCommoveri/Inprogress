@@ -8,6 +8,7 @@ import {
 } from '../data/wizardState.js';
 import { WIZARD_STEPS } from '../data/wizardSteps.js';
 import { getSampleDataManifest } from '../data/settings.js';
+import { shouldOfferFirstRunPrompt, seedSampleData } from '../data/sampleData.js';
 import { confirmModal, alertModal, esc } from './ui.js';
 
 function rootPrefix() {
@@ -50,9 +51,58 @@ function goToStep(step) {
   location.href = resolveStepUrl(step);
 }
 
-// --- First offer -------------------------------------------------------
+// --- Tour-first offer (the very first screen on a genuinely fresh browser) ---
+// Asked before the sample-vs-blank prompt (sampleDataUI.js's
+// maybeShowFirstRunPrompt()), not after: a "yes" here seeds the sample packet
+// AND starts the tour in one step, then reloads — so the sample-vs-blank
+// prompt is only ever reached once the user has said no thanks to the tour.
+// Same gate as that prompt (shouldOfferFirstRunPrompt()) so it only appears on
+// a browser that has never made either choice.
+export async function maybeOfferTourFirst() {
+  if (!(await shouldOfferFirstRunPrompt())) return false;
+
+  return new Promise((resolve) => {
+    const overlay = document.createElement('div');
+    overlay.className = 'modal-overlay';
+    overlay.innerHTML = `
+      <div class="modal" role="dialog" aria-modal="true" style="max-width:480px; text-align:center;">
+        <h2 style="margin-top:0;">🐾 Welcome to KennelOS</h2>
+        <p class="muted">Want a 2-minute guided tour? We'll walk you through a sample kennel —
+          dogs, pairings, litters, contracts — one idea per stop, so you know your way around
+          before you start on your own records.</p>
+        <div class="form-actions" style="justify-content:center;">
+          <button class="btn btn-primary" data-act="yes">Yes, show me around</button>
+          <button class="btn" data-act="no">No thanks</button>
+        </div>
+        <p class="faint" style="margin-bottom:0;">Sample data can be cleared any time from Import / Export.</p>
+      </div>`;
+    document.body.appendChild(overlay);
+
+    overlay.querySelector('[data-act="no"]').addEventListener('click', () => {
+      overlay.remove();
+      resolve(false);
+    });
+    overlay.querySelector('[data-act="yes"]').addEventListener('click', async (e) => {
+      e.target.disabled = true;
+      e.target.textContent = 'Setting up…';
+      await seedSampleData();
+      startWizard();
+      location.reload(); // never resolves — the reload takes over, same as the sample-vs-blank prompt's seed branch
+    });
+  });
+}
+
+// --- Fallback offer ------------------------------------------------------
+// Covers the one path maybeOfferTourFirst() doesn't: the user declines the
+// tour up front but then picks "Explore with sample data" from the
+// sample-vs-blank prompt anyway. Called unconditionally from app.js's boot()
+// (like renderWizardMenuEntry() / runWizardStep()) rather than chased through
+// firstRunFlow()'s return value, since seeding always reloads before any
+// promise from that click can resolve — the *next* boot is what actually sees
+// isTourAvailable() true + status still 'unseen'. No-ops once the tour has
+// been offered (via either path), started, or completed.
 export async function maybeOfferWizardStart() {
-  if (getWizardStatus() !== 'unseen') return;
+  if (!isTourAvailable() || getWizardStatus() !== 'unseen') return;
   const start = await confirmModal({
     title: 'Take a guided tour?',
     message: 'Take a 2-minute guided tour of Thornfield Kennels — one idea per stop, ' +
