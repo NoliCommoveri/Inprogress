@@ -465,9 +465,13 @@ way.
 - **appReset.js** — `resetApp()` clears every table + all settings → the exact blank slate
   a never-visited browser sees.
 
-First-run flow (`app.js`): request durable storage once → offer sample data; if declined
-(or after sample data is later cleared), offer kennel setup. When sample data **is** seeded,
-`maybeOfferWizardStart()` then offers the **guided tour** (below).
+First-run flow (`app.js`): request durable storage once → offer the **guided tour**
+(`maybeOfferTourFirst()`, below) up front on a genuinely fresh browser; "yes" seeds the
+sample packet and starts the tour in one step. Only a "no thanks" (or nothing to offer)
+reaches the sample-vs-blank prompt; if declined there too (or after sample data is later
+cleared), offer kennel setup. `maybeOfferWizardStart()` is the fallback for the one path
+`maybeOfferTourFirst()` doesn't cover — declining the tour up front, then picking "Explore
+with sample data" anyway.
 
 **Guided tour (first-run wizard).** A spotlight coach-mark tour of the seeded Thornfield
 packet — a pure UI/state feature that reads existing records (never writes app data) and

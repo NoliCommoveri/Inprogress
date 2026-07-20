@@ -9,7 +9,7 @@ import { wasPersistRequested, markPersistRequested } from './data/settings.js';
 import { expenseRepo } from './data/expenseRepo.js';
 import { maybeShowFirstRunPrompt, renderSampleBanner } from './assets/sampleDataUI.js';
 import { maybeShowKennelSetupPrompt, renderKennelBanner } from './assets/kennelSetupUI.js';
-import { maybeOfferWizardStart, renderWizardMenuEntry, runWizardStep } from './assets/wizardUI.js';
+import { maybeOfferTourFirst, maybeOfferWizardStart, renderWizardMenuEntry, runWizardStep } from './assets/wizardUI.js';
 
 async function firstRunPersistence() {
   if (wasPersistRequested()) return;
@@ -27,14 +27,17 @@ function registerServiceWorker() {
   navigator.serviceWorker.register(swUrl, { scope: new URL('./', import.meta.url) });
 }
 
-// The kennel-setup wizard follows the sample-data choice, not precedes it:
+// The tour offer comes first: a "yes" seeds sample data and starts the tour in
+// one step (wizardUI.js's maybeOfferTourFirst()), so the sample-vs-blank
+// prompt below is only ever reached after a "no thanks" to the tour. The
+// kennel-setup wizard in turn follows the sample-data choice, not precedes it:
 // picking "Explore with sample data" reloads the page (Thornfield Kennels
 // already fills that role), so only the "blank kennel" branch — or a later
 // reload right after sample data gets cleared — ever reaches it.
 async function firstRunFlow() {
+  await maybeOfferTourFirst(); // 'yes' seeds + starts the tour + reloads; only a 'no' or no-offer returns here
   const choice = await maybeShowFirstRunPrompt();
-  if (choice !== 'seeded') { maybeShowKennelSetupPrompt(); return; }
-  maybeOfferWizardStart(); // only reached on the 'seeded' branch (Wizard Runtime Spec v1 §6.1)
+  if (choice !== 'seeded') maybeShowKennelSetupPrompt();
 }
 
 function boot() {
@@ -48,6 +51,9 @@ function boot() {
   renderKennelBanner();
   renderWizardMenuEntry();
   runWizardStep();
+  // Guarded internally (isTourAvailable() + status 'unseen'): the reload after
+  // seeding is what actually reaches this, not firstRunFlow()'s seed choice below.
+  maybeOfferWizardStart();
   firstRunFlow();
 }
 
